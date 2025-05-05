@@ -1,0 +1,1227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Variable Font Animation</title>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90' font-family='Offgrid'>O</text></svg>">
+    <style>
+        @font-face {
+            font-family: 'G2ErikaMono';
+            src: url('G2-Erika-Mono.otf') format('opentype');
+            font-weight: normal;
+            font-style: normal;
+        }
+
+        @font-face {
+            font-family: 'Offgrid';
+            src: url('250415Offgrid-variableVF.ttf') format('truetype-variations');
+            font-weight: 200 500;
+        }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: #fff;
+            font-family: 'Offgrid', sans-serif;
+            color: #fff;
+            overflow: hidden;
+        }
+
+        .controls {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(42, 42, 42, 0.85);
+            padding: 16px;
+            border-radius: 12px;
+            backdrop-filter: blur(10px);
+            font-family: 'G2ErikaMono', monospace;
+            font-size: 12px;
+            z-index: 1000;
+            display: flex;
+            gap: 30px;
+            text-transform: uppercase;
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .control-group h3 {
+            margin: 0;
+            font-size: 12px;
+            color: #999;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-weight: normal;
+        }
+
+        .control-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .control-row label {
+            width: 50px;
+            font-size: 12px;
+            color: #999;
+            text-transform: uppercase;
+            font-weight: normal;
+        }
+
+        input[type="range"] {
+            width: 100px;
+            height: 4px;
+            -webkit-appearance: none;
+            background: #404040;
+            border-radius: 2px;
+            outline: none;
+            transition: all 0.3s ease;
+            border: none;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 10px;
+            height: 10px;
+            background: #FFFFFF;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        input[type="range"]::-webkit-slider-thumb:hover {
+            transform: scale(1.1);
+        }
+
+        input[type="color"] {
+            width: 40px;
+            height: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 4px;
+            cursor: pointer;
+            background: #fff;
+        }
+
+        .stagger-value, #textSizeValue {
+            color: #999;
+            font-family: 'G2ErikaMono', monospace;
+            min-width: 40px;
+            font-size: 12px;
+            text-transform: uppercase;
+            font-weight: normal;
+        }
+
+        .input-container {
+            margin-bottom: 2rem;
+            position: relative;
+            z-index: 1000;
+        }
+
+        input[type="text"] {
+            font-size: 1.5rem;
+            padding: 12px;
+            background: rgba(42, 42, 42, 0.95);
+            border: none;
+            color: #fff;
+            outline: none;
+            text-align: center;
+            border-radius: 6px;
+            backdrop-filter: blur(10px);
+            font-family: 'Offgrid', sans-serif;
+        }
+
+        .text-container {
+            position: relative;
+            height: 100vh;
+            width: 100vw;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: text;
+            overflow: hidden;
+            padding: 2rem;
+        }
+
+        .text-layer {
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 5rem;
+            white-space: pre-wrap;
+            transition: font-weight 0.5s ease;
+            outline: none;
+            user-select: text;
+            -webkit-user-select: text;
+            max-width: 95vw;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            text-rendering: optimizeLegibility;
+            line-height: 1.01;
+            text-align: center;
+        }
+
+        .text-layer::selection {
+            background: rgba(255, 255, 255, 0.2);
+            color: #fff;
+        }
+
+        .text-layer.layer-1::selection {
+            background: rgba(0, 255, 0, 0.2);
+            color: #00ff00;
+        }
+
+        .text-layer.layer-2::selection {
+            background: rgba(255, 0, 255, 0.2);
+            color: #ff00ff;
+        }
+
+        .text-layer.layer-3::selection {
+            background: rgba(255, 255, 0, 0.2);
+            color: #ffff00;
+        }
+
+        .text-layer span {
+            display: inline;
+            white-space: pre-wrap;
+        }
+
+        .text-layer span::selection {
+            background: inherit;
+            color: inherit;
+        }
+
+        .text-layer.sequential span {
+            animation: weightAnimation 3s infinite;
+        }
+
+        .text-layer.simultaneous {
+            animation: weightAnimation 3s infinite;
+        }
+
+        .layer-1 {
+            animation-delay: 0s;
+        }
+
+        .layer-2 {
+            animation-delay: 0.5s;
+        }
+
+        .layer-3 {
+            animation-delay: 0.4s;
+        }
+
+        @keyframes weightAnimation {
+            0% { font-weight: 200; }
+            50% { font-weight: 500; }
+            100% { font-weight: 200; }
+        }
+
+        .color-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: transform 0.2s ease;
+            border: 1px solid transparent;
+        }
+
+        .color-dot:hover {
+            transform: scale(1.2);
+        }
+
+        .color-dot.selected {
+            border: 1px solid #fff;
+        }
+
+        .color-dots {
+            display: flex;
+            gap: 8px;
+        }
+
+        .palette-selector {
+            display: flex;
+            align-items: center;
+        }
+
+        .palette-selector select,
+        .curve-selector select {
+            width: 150px;
+            height: 20px;
+            background: #2a2a2a;
+            color: #999;
+            border: none;
+            border-radius: 4px;
+            padding: 0 8px;
+            font-family: 'G2ErikaMono', monospace;
+            font-size: 12px;
+            text-transform: uppercase;
+            cursor: pointer;
+            outline: none;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+            background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23999' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+            background-repeat: no-repeat;
+            background-position: right 6px center;
+            background-size: 10px;
+            padding-right: 20px;
+            line-height: 20px;
+        }
+
+        .palette-selector select option,
+        .curve-selector select option {
+            background: #2a2a2a;
+            color: #999;
+            text-transform: uppercase;
+            padding: 4px 8px;
+            font-size: 12px;
+            line-height: 1.2;
+        }
+
+        .palette-selector select:hover {
+            color: #fff;
+        }
+
+        .palette-selector select option:hover {
+            background: #404040;
+        }
+
+        .speed-dots {
+            display: flex;
+            gap: 8px;
+        }
+
+        .speed-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: transform 0.2s ease, background-color 0.2s ease;
+            border: 1px solid transparent;
+            background: #404040;
+            position: relative;
+        }
+
+        .speed-dot:hover {
+            transform: scale(1.2);
+        }
+
+        .speed-dot.selected {
+            border: 1px solid #fff;
+            background: #fff;
+        }
+
+        .speed-dot.filled {
+            background: #fff;
+            border: 1px solid #fff;
+        }
+
+        .curve-selector {
+            display: flex;
+            align-items: center;
+        }
+
+        .curve-selector select:hover {
+            color: #fff;
+        }
+
+        .mode-selector {
+            display: flex;
+            gap: 8px;
+        }
+
+        .mode-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: transform 0.2s ease, background-color 0.2s ease;
+            border: 1px solid transparent;
+            background: #404040;
+            position: relative;
+        }
+
+        .mode-dot:hover {
+            transform: scale(1.2);
+        }
+
+        .mode-dot.selected {
+            border: 1px solid #fff;
+            background: #fff;
+        }
+
+        .shadow-toggle {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .shadow-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: transform 0.2s ease, background-color 0.2s ease;
+            border: 1px solid transparent;
+            background: #404040;
+            position: relative;
+        }
+
+        .shadow-dot:hover {
+            transform: scale(1.2);
+        }
+
+        .shadow-dot.selected {
+            border: 1px solid #fff;
+            background: #fff;
+        }
+
+        .export-button {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: rgba(42, 42, 42, 0.85);
+            border: none;
+            color: #999;
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-family: 'G2ErikaMono', monospace;
+            font-size: 12px;
+            cursor: pointer;
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+            z-index: 1000;
+        }
+
+        .export-button:hover {
+            color: #fff;
+            background: rgba(42, 42, 42, 0.95);
+        }
+
+        .export-button.loading {
+            pointer-events: none;
+        }
+
+        .export-button.loading span {
+            display: inline-block;
+            animation: letterPulse 1.5s infinite;
+        }
+
+        .export-button.loading span:nth-child(1) { animation-delay: 0.0s; }
+        .export-button.loading span:nth-child(2) { animation-delay: 0.1s; }
+        .export-button.loading span:nth-child(3) { animation-delay: 0.2s; }
+        .export-button.loading span:nth-child(4) { animation-delay: 0.3s; }
+        .export-button.loading span:nth-child(5) { animation-delay: 0.4s; }
+        .export-button.loading span:nth-child(6) { animation-delay: 0.5s; }
+
+        @keyframes letterPulse {
+            0%, 100% { color: #999; }
+            50% { color: #fff; }
+        }
+
+        .export-options {
+            position: fixed;
+            bottom: 70px;
+            right: 20px;
+            background: rgba(42, 42, 42, 0.85);
+            padding: 8px;
+            border-radius: 6px;
+            backdrop-filter: blur(10px);
+            display: none;
+            flex-direction: column;
+            gap: 8px;
+            z-index: 1000;
+        }
+
+        .export-options.show {
+            display: flex;
+        }
+
+        .export-option {
+            background: none;
+            border: none;
+            color: #999;
+            padding: 8px;
+            font-family: 'G2ErikaMono', monospace;
+            font-size: 12px;
+            cursor: pointer;
+            text-align: left;
+            transition: color 0.3s ease;
+        }
+
+        .export-option:hover {
+            color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <div class="controls">
+        <div class="control-group">
+            <h3>GLOBAL I</h3>
+            <div class="control-row">
+                <label>Size</label>
+                <input type="range" min="20" max="400" step="1" value="200" id="textSizeInput">
+                <span id="textSizeValue">200px</span>
+            </div>
+            <div class="control-row">
+                <label>BG</label>
+                <div class="color-dots">
+                    <div class="color-dot" style="background: #000000" data-color="#000000"></div>
+                    <div class="color-dot" style="background: #ffffff" data-color="#ffffff"></div>
+                    <div class="color-dot" style="background: #999999" data-color="#999999"></div>
+                    <div class="color-dot" style="background: #ff00ff" data-color="random"></div>
+                </div>
+            </div>
+            <div class="control-row">
+                <label>Palette</label>
+                <div class="palette-selector">
+                    <select id="paletteSelect">
+                        <option value="neon-mono">Neon Mono</option>
+                        <option value="rgb">RGB</option>
+                        <option value="rgb-multiply">RGB Multiply</option>
+                        <option value="mondrian">Mondrian</option>
+                        <option value="pastel">Pastel</option>
+                        <option value="random">Random</option>
+                        <option value="mono">Monochrome</option>
+                        <option value="neon">Neon</option>
+                        <option value="neon-multiply">Neon Multiply</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+        <div class="control-group">
+            <h3>GLOBAL II</h3>
+            <div class="control-row">
+                <label>Curve</label>
+                <div class="curve-selector">
+                    <select id="curveSelect">
+                        <option value="ease-in-out">Ease In Out</option>
+                        <option value="ease-in">Ease In</option>
+                        <option value="ease-out">Ease Out</option>
+                        <option value="linear">Linear</option>
+                        <option value="cubic-bezier(0.95, 0.05, 0.795, 0.035)">Exponential</option>
+                        <option value="steps(4)">Stepped</option>
+                        <option value="cubic-bezier(0.68, -0.55, 0.265, 1.55)">Bounce</option>
+                        <option value="random">Random</option>
+                    </select>
+                </div>
+            </div>
+            <div class="control-row">
+                <label>Mode</label>
+                <div class="mode-selector">
+                    <div class="mode-dot" data-mode="simultaneous"></div>
+                </div>
+            </div>
+            <div class="control-row">
+                <label>Shadow</label>
+                <div class="shadow-toggle">
+                    <div class="shadow-dot" data-shadow="off"></div>
+                </div>
+            </div>
+        </div>
+        <div class="control-group">
+            <h3>Layer 1</h3>
+            <div class="control-row">
+                <label>Delay</label>
+                <input type="range" min="0" max="1" step="0.1" value="0" class="stagger-input" data-layer="1">
+                <span class="stagger-value">0s</span>
+            </div>
+            <div class="control-row">
+                <label>Speed</label>
+                <div class="speed-dots" data-layer="1">
+                    <div class="speed-dot" data-speed="0.5"></div>
+                    <div class="speed-dot selected" data-speed="1"></div>
+                    <div class="speed-dot" data-speed="1.5"></div>
+                    <div class="speed-dot" data-speed="2"></div>
+                </div>
+            </div>
+            <div class="control-row">
+                <label>Color</label>
+                <div class="color-dots" data-layer="1">
+                    <!-- Colors will be updated by JavaScript -->
+                </div>
+            </div>
+        </div>
+        <div class="control-group">
+            <h3>Layer 2</h3>
+            <div class="control-row">
+                <label>Delay</label>
+                <input type="range" min="0" max="1" step="0.1" value="0.5" class="stagger-input" data-layer="2">
+                <span class="stagger-value">0.5s</span>
+            </div>
+            <div class="control-row">
+                <label>Speed</label>
+                <div class="speed-dots" data-layer="2">
+                    <div class="speed-dot" data-speed="0.5"></div>
+                    <div class="speed-dot" data-speed="1"></div>
+                    <div class="speed-dot selected" data-speed="1.5"></div>
+                    <div class="speed-dot" data-speed="2"></div>
+                </div>
+            </div>
+            <div class="control-row">
+                <label>Color</label>
+                <div class="color-dots" data-layer="2">
+                    <!-- Colors will be updated by JavaScript -->
+                </div>
+            </div>
+        </div>
+        <div class="control-group">
+            <h3>Layer 3</h3>
+            <div class="control-row">
+                <label>Delay</label>
+                <input type="range" min="0" max="1" step="0.1" value="0.4" class="stagger-input" data-layer="3">
+                <span class="stagger-value">0.4s</span>
+            </div>
+            <div class="control-row">
+                <label>Speed</label>
+                <div class="speed-dots" data-layer="3">
+                    <div class="speed-dot selected filled" data-speed="0.5"></div>
+                    <div class="speed-dot" data-speed="1"></div>
+                    <div class="speed-dot" data-speed="1.5"></div>
+                    <div class="speed-dot" data-speed="2"></div>
+                </div>
+            </div>
+            <div class="control-row">
+                <label>Color</label>
+                <div class="color-dots" data-layer="3">
+                    <!-- Colors will be updated by JavaScript -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="text-container">
+        <div class="text-layer layer-1 simultaneous" id="layer1" contenteditable="true" spellcheck="false">TYPE SOMETHING</div>
+        <div class="text-layer layer-2 simultaneous" id="layer2" contenteditable="true" spellcheck="false">TYPE SOMETHING</div>
+        <div class="text-layer layer-3 simultaneous" id="layer3" contenteditable="true" spellcheck="false">TYPE SOMETHING</div>
+    </div>
+
+    <button class="export-button"><span>E</span><span>X</span><span>P</span><span>O</span><span>R</span><span>T</span></button>
+    <div class="export-options">
+        <button class="export-option" data-duration="3">3 SECONDS</button>
+        <button class="export-option" data-duration="5">5 SECONDS</button>
+        <button class="export-option" data-duration="10">10 SECONDS</button>
+    </div>
+
+    <script>
+        const layers = [
+            document.getElementById('layer1'),
+            document.getElementById('layer2'),
+            document.getElementById('layer3')
+        ];
+
+        // Handle text size
+        const textSizeInput = document.getElementById('textSizeInput');
+        const textSizeValue = document.getElementById('textSizeValue');
+        textSizeInput.addEventListener('input', (e) => {
+            const size = e.target.value;
+            textSizeValue.textContent = `${size}px`;
+            layers.forEach(layer => {
+                layer.style.fontSize = `${size}px`;
+            });
+        });
+
+        // Set initial size
+        layers.forEach(layer => {
+            layer.style.fontSize = '200px';
+        });
+
+        // Color palettes
+        const colorPalettes = {
+            'neon-mono': {
+                layer1: ['#000000', '#333333', '#666666', '#999999'],
+                layer2: ['#00ff00', '#ff00ff', '#ffff00', '#00ffff'],
+                layer3: ['#cccccc', '#dddddd', '#eeeeee', '#ffffff']
+            },
+            rgb: {
+                layer1: ['#ff0000', '#ff3333', '#ff6666', '#ff9999'],
+                layer2: ['#00ff00', '#33ff33', '#66ff66', '#99ff99'],
+                layer3: ['#0000ff', '#3333ff', '#6666ff', '#9999ff']
+            },
+            'rgb-multiply': {
+                layer1: ['#ff0000', '#ff3333', '#ff6666', '#ff9999'],
+                layer2: ['#00ff00', '#33ff33', '#66ff66', '#99ff99'],
+                layer3: ['#0000ff', '#3333ff', '#6666ff', '#9999ff']
+            },
+            mondrian: {
+                layer1: ['#ff0000', '#ff3333', '#ff6666', '#ff9999'],
+                layer2: ['#ffff00', '#ffff33', '#ffff66', '#ffff99'],
+                layer3: ['#0000ff', '#3333ff', '#6666ff', '#9999ff']
+            },
+            pastel: {
+                layer1: ['#ffb3ba', '#ffc3c9', '#ffd3d8', '#ffe3e6'],
+                layer2: ['#baffc9', '#c9ffd3', '#d8ffdd', '#e6ffe6'],
+                layer3: ['#bae1ff', '#c9e7ff', '#d8edff', '#e6f3ff']
+            },
+            random: {
+                layer1: ['#ff0000', '#ff3333', '#ff6666', '#ff9999'],
+                layer2: ['#00ff00', '#33ff33', '#66ff66', '#99ff99'],
+                layer3: ['#0000ff', '#3333ff', '#6666ff', '#9999ff']
+            },
+            mono: {
+                layer1: ['#000000', '#333333', '#666666', '#999999'],
+                layer2: ['#333333', '#666666', '#999999', '#cccccc'],
+                layer3: ['#666666', '#999999', '#cccccc', '#ffffff']
+            },
+            neon: {
+                layer1: ['#ff00ff', '#ff33ff', '#ff66ff', '#ff99ff'],
+                layer2: ['#00ffff', '#33ffff', '#66ffff', '#99ffff'],
+                layer3: ['#ffff00', '#ffff33', '#ffff66', '#ffff99']
+            },
+            'neon-multiply': {
+                layer1: ['#ff00ff', '#ff33ff', '#ff66ff', '#ff99ff'],
+                layer2: ['#00ffff', '#33ffff', '#66ffff', '#99ffff'],
+                layer3: ['#ffff00', '#ffff33', '#ffff66', '#ffff99']
+            }
+        };
+
+        // Function to generate random color
+        function getRandomColor() {
+            return '#' + Math.floor(Math.random()*16777215).toString(16).padStart(6, '0');
+        }
+
+        // Function to generate random color palette
+        function generateRandomPalette() {
+            return {
+                layer1: [getRandomColor(), getRandomColor(), getRandomColor(), getRandomColor()],
+                layer2: [getRandomColor(), getRandomColor(), getRandomColor(), getRandomColor()],
+                layer3: [getRandomColor(), getRandomColor(), getRandomColor(), getRandomColor()]
+            };
+        }
+
+        // Function to update color dots
+        function updateColorDots(palette) {
+            // If random palette is selected, generate new random colors
+            if (palette === 'random') {
+                colorPalettes.random = generateRandomPalette();
+            }
+
+            Object.keys(colorPalettes[palette]).forEach((layer, index) => {
+                const layerNum = index + 1;
+                const colorDotsContainer = document.querySelector(`.color-dots[data-layer="${layerNum}"]`);
+                colorDotsContainer.innerHTML = '';
+                
+                colorPalettes[palette][layer].forEach((color, i) => {
+                    const dot = document.createElement('div');
+                    dot.className = 'color-dot';
+                    dot.style.background = color;
+                    dot.dataset.color = color;
+                    dot.dataset.layer = layerNum;
+                    if (i === 0) dot.classList.add('selected');
+                    colorDotsContainer.appendChild(dot);
+                });
+
+                // Set initial color and blend mode
+                const layerElement = document.getElementById(`layer${layerNum}`);
+                layerElement.style.color = colorPalettes[palette][layer][0];
+                if (palette.includes('multiply')) {
+                    layerElement.style.mixBlendMode = 'multiply';
+                } else {
+                    layerElement.style.mixBlendMode = 'normal';
+                }
+            });
+        }
+
+        // Handle palette selection
+        document.getElementById('paletteSelect').addEventListener('change', (e) => {
+            const palette = e.target.value;
+            updateColorDots(palette);
+        });
+
+        // Initialize with default palette
+        updateColorDots('neon-mono');
+
+        // Handle color dots (updated to work with dynamic dots)
+        document.addEventListener('click', (e) => {
+            if (e.target.classList.contains('color-dot')) {
+                const color = e.target.dataset.color;
+                const layer = e.target.dataset.layer;
+                
+                // Remove selected class from all dots in the same group
+                const parentDots = e.target.parentElement;
+                parentDots.querySelectorAll('.color-dot').forEach(d => {
+                    d.classList.remove('selected');
+                });
+                
+                // Add selected class to clicked dot
+                e.target.classList.add('selected');
+                
+                if (layer) {
+                    // Layer color
+                    const layerElement = document.getElementById(`layer${layer}`);
+                    layerElement.style.color = color;
+                } else {
+                    // Background color
+                    if (color === 'random' || e.target.dataset.isRandom) {
+                        const randomColor = '#' + Math.floor(Math.random()*16777215).toString(16);
+                        document.body.style.background = randomColor;
+                        e.target.style.background = randomColor;
+                        e.target.dataset.color = randomColor;
+                        e.target.dataset.isRandom = 'true';
+                    } else {
+                        document.body.style.background = color;
+                    }
+                }
+            }
+        });
+
+        // Handle text input and update all layers
+        layers.forEach(layer => {
+            layer.addEventListener('input', (e) => {
+                // Save selection
+                const selection = window.getSelection();
+                const range = selection.getRangeAt(0);
+                const startContainer = range.startContainer;
+                const startOffset = range.startOffset;
+
+                // Get the text content with line breaks preserved
+                const text = layer.innerHTML;
+                
+                // Update other layers first
+                layers.forEach(l => {
+                    if (l !== layer) {
+                        l.innerHTML = text;
+                    }
+                });
+
+                // Update spans if in sequential mode
+                if (layer.classList.contains('sequential')) {
+                    updateLetterSpans();
+                }
+
+                // Restore cursor position
+                try {
+                    const newRange = document.createRange();
+                    // Always place cursor at the end of the content
+                    const lastNode = layer.lastChild || layer;
+                    if (lastNode.nodeType === Node.TEXT_NODE) {
+                        newRange.setStart(lastNode, lastNode.length);
+                    } else {
+                        newRange.setStart(layer, layer.childNodes.length);
+                    }
+                    newRange.collapse(true);
+                    selection.removeAllRanges();
+                    selection.addRange(newRange);
+                } catch (error) {
+                    console.log('Error restoring cursor position:', error);
+                }
+            });
+
+            // Handle paste events to preserve formatting
+            layer.addEventListener('paste', (e) => {
+                e.preventDefault();
+                const text = e.clipboardData.getData('text/plain');
+                document.execCommand('insertText', false, text);
+            });
+        });
+
+        // Handle speed dots
+        document.addEventListener('click', (e) => {
+            if (e.target.classList.contains('speed-dot')) {
+                const speed = parseFloat(e.target.dataset.speed);
+                const layer = e.target.parentElement.dataset.layer;
+                
+                // Get all dots in the group
+                const parentDots = e.target.parentElement;
+                const dots = Array.from(parentDots.querySelectorAll('.speed-dot'));
+                const clickedIndex = dots.indexOf(e.target);
+                
+                // Reset all dots
+                dots.forEach(dot => {
+                    dot.classList.remove('selected', 'filled');
+                });
+                
+                // Fill dots up to and including the clicked one
+                dots.forEach((dot, index) => {
+                    if (index <= clickedIndex) {
+                        dot.classList.add('filled');
+                    }
+                });
+                
+                // Add selected class to clicked dot
+                e.target.classList.add('selected');
+                
+                // Update animation duration
+                const layerElement = document.getElementById(`layer${layer}`);
+                const baseDuration = 3; // Base duration in seconds
+                layerElement.style.animationDuration = `${baseDuration / speed}s`;
+
+                // Update spans if in sequential mode
+                if (layerElement.classList.contains('sequential')) {
+                    const spans = layerElement.querySelectorAll('span');
+                    spans.forEach(span => {
+                        span.style.animationDuration = `${baseDuration / speed}s`;
+                    });
+                }
+            }
+        });
+
+        // Handle curve selection
+        document.getElementById('curveSelect').addEventListener('change', (e) => {
+            const curve = e.target.value;
+            if (curve === 'random') {
+                const curves = [
+                    'ease-in-out',
+                    'ease-in',
+                    'ease-out',
+                    'linear',
+                    'cubic-bezier(0.95, 0.05, 0.795, 0.035)',
+                    'steps(4)',
+                    'cubic-bezier(0.68, -0.55, 0.265, 1.55)'
+                ];
+                layers.forEach(layer => {
+                    const randomCurve = curves[Math.floor(Math.random() * curves.length)];
+                    layer.style.animationTimingFunction = randomCurve;
+                });
+            } else {
+                layers.forEach(layer => {
+                    layer.style.animationTimingFunction = curve;
+                });
+            }
+        });
+
+        // Handle mode selection
+        document.addEventListener('click', (e) => {
+            if (e.target.classList.contains('mode-dot')) {
+                const isSequential = e.target.classList.contains('selected');
+                
+                // Toggle selected class
+                e.target.classList.toggle('selected');
+                
+                // Update animation mode for all layers
+                layers.forEach(layer => {
+                    // Remove both mode classes
+                    layer.classList.remove('simultaneous', 'sequential');
+                    
+                    // Add the new mode class
+                    layer.classList.add(isSequential ? 'simultaneous' : 'sequential');
+                    
+                    // Handle the text content based on mode
+                    if (!isSequential) {
+                        // For sequential mode, we'll let updateLetterSpans handle the content
+                        updateLetterSpans();
+                    } else {
+                        // For simultaneous mode, ensure we have clean text without spans
+                        const text = layer.innerHTML;
+                        layer.innerHTML = text.replace(/<span[^>]*>(.*?)<\/span>/g, '$1');
+                    }
+                });
+            }
+        });
+
+        // Handle stagger inputs
+        document.querySelectorAll('.stagger-input').forEach(input => {
+            input.addEventListener('input', (e) => {
+                const layer = e.target.dataset.layer;
+                const value = e.target.value;
+                const layerElement = document.getElementById(`layer${layer}`);
+                layerElement.style.animationDelay = `${value}s`;
+                e.target.nextElementSibling.textContent = `${value}s`;
+                
+                // Update spans if in sequential mode
+                if (layerElement.classList.contains('sequential')) {
+                    const spans = layerElement.querySelectorAll('span');
+                    spans.forEach((span, index) => {
+                        span.style.animationDelay = `${(index * 0.1) + parseFloat(value)}s`;
+                    });
+                }
+            });
+        });
+
+        // Function to wrap each letter in a span
+        function updateLetterSpans() {
+            layers.forEach(layer => {
+                if (layer.classList.contains('sequential')) {
+                    const text = layer.innerHTML;
+                    const layerDelay = parseFloat(layer.style.animationDelay) || 0;
+                    const layerSpeed = parseFloat(layer.style.animationDuration) || 3;
+                    const layerTiming = layer.style.animationTimingFunction;
+                    
+                    // Create a temporary container to hold the text
+                    const temp = document.createElement('div');
+                    temp.innerHTML = text;
+                    
+                    // Process each text node
+                    const processNode = (node) => {
+                        if (node.nodeType === Node.TEXT_NODE) {
+                            const text = node.textContent;
+                            const spans = [];
+                            for (let i = 0; i < text.length; i++) {
+                                const span = document.createElement('span');
+                                span.textContent = text[i];
+                                span.style.animationDuration = `${layerSpeed}s`;
+                                span.style.animationDelay = `${(i * 0.1) + layerDelay}s`;
+                                span.style.animationTimingFunction = layerTiming;
+                                spans.push(span);
+                            }
+                            return spans;
+                        } else if (node.nodeType === Node.ELEMENT_NODE) {
+                            const newElement = document.createElement(node.tagName);
+                            // Copy all attributes from the original element
+                            Array.from(node.attributes).forEach(attr => {
+                                newElement.setAttribute(attr.name, attr.value);
+                            });
+                            // Process child nodes
+                            Array.from(node.childNodes).forEach(child => {
+                                const processed = processNode(child);
+                                if (Array.isArray(processed)) {
+                                    processed.forEach(span => newElement.appendChild(span));
+                                } else {
+                                    newElement.appendChild(processed);
+                                }
+                            });
+                            return newElement;
+                        }
+                        return node;
+                    };
+
+                    // Process all nodes
+                    const processed = Array.from(temp.childNodes).map(processNode);
+                    
+                    // Clear and append all processed nodes
+                    layer.innerHTML = '';
+                    processed.forEach(node => {
+                        if (Array.isArray(node)) {
+                            node.forEach(span => layer.appendChild(span));
+                        } else {
+                            layer.appendChild(node);
+                        }
+                    });
+                }
+            });
+        }
+
+        // Set initial delays
+        document.querySelectorAll('.stagger-input').forEach(input => {
+            const layer = input.dataset.layer;
+            const value = input.value;
+            const layerElement = document.getElementById(`layer${layer}`);
+            layerElement.style.animationDelay = `${value}s`;
+            input.nextElementSibling.textContent = `${value}s`;
+        });
+
+        // Initial setup
+        updateLetterSpans();
+
+        // Handle shadow toggle
+        document.addEventListener('click', (e) => {
+            if (e.target.classList.contains('shadow-dot')) {
+                const isOn = e.target.classList.contains('selected');
+                
+                // Toggle selected class
+                e.target.classList.toggle('selected');
+                
+                // Update shadow for all layers
+                layers.forEach(layer => {
+                    layer.style.textShadow = isOn ? 'none' : '1px 1px 2px rgba(0, 0, 0, 0.2)';
+                });
+            }
+        });
+
+        // Export functionality
+        const exportButton = document.querySelector('.export-button');
+        const exportOptions = document.querySelector('.export-options');
+
+        exportButton.addEventListener('click', () => {
+            exportOptions.classList.toggle('show');
+        });
+
+        // Close export options when clicking outside
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('.export-button') && !e.target.closest('.export-options')) {
+                exportOptions.classList.remove('show');
+            }
+        });
+
+        // Export as Video
+        document.querySelectorAll('.export-option').forEach(option => {
+            option.addEventListener('click', async () => {
+                const duration = parseInt(option.dataset.duration) * 1000; // Convert to milliseconds
+                const exportButton = document.querySelector('.export-button');
+                
+                // Add loading state
+                exportButton.classList.add('loading');
+                exportOptions.classList.remove('show');
+                
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                
+                // Set canvas size with higher resolution
+                const scale = 2; // Scale factor for higher resolution
+                canvas.width = window.innerWidth * scale;
+                canvas.height = window.innerHeight * scale;
+                
+                // Scale the context to match the higher resolution
+                ctx.scale(scale, scale);
+                
+                // Get supported mime type
+                const mimeTypes = [
+                    'video/webm;codecs=vp8',
+                    'video/webm',
+                    'video/mp4'
+                ];
+                
+                let selectedMimeType = '';
+                for (const mimeType of mimeTypes) {
+                    if (MediaRecorder.isTypeSupported(mimeType)) {
+                        selectedMimeType = mimeType;
+                        break;
+                    }
+                }
+                
+                if (!selectedMimeType) {
+                    alert('Video recording is not supported in your browser.');
+                    exportButton.classList.remove('loading');
+                    return;
+                }
+
+                const stream = canvas.captureStream(60); // 60 FPS for smoother animation
+                const mediaRecorder = new MediaRecorder(stream, {
+                    mimeType: selectedMimeType,
+                    videoBitsPerSecond: 8000000 // 8 Mbps for higher quality
+                });
+                const chunks = [];
+
+                // Start recording
+                mediaRecorder.start();
+
+                const startTime = Date.now();
+                let frameCount = 0;
+
+                function draw() {
+                    // Clear canvas
+                    ctx.fillStyle = getComputedStyle(document.body).backgroundColor;
+                    ctx.fillRect(0, 0, canvas.width / scale, canvas.height / scale);
+
+                    // Draw text layers
+                    layers.forEach(layer => {
+                        const fontSize = parseInt(layer.style.fontSize);
+                        const currentTime = (Date.now() - startTime) / 1000;
+                        const layerDelay = parseFloat(layer.style.animationDelay) || 0;
+                        const layerSpeed = parseFloat(layer.style.animationDuration) || 3;
+                        
+                        // Get the computed style of the layer
+                        const layerStyle = window.getComputedStyle(layer);
+                        const lineHeight = parseFloat(layerStyle.lineHeight);
+                        
+                        if (layer.classList.contains('sequential')) {
+                            // For sequential mode, draw each span separately
+                            const spans = layer.querySelectorAll('span');
+                            let currentLine = 0;
+                            let xOffset = 0;
+                            let maxLineWidth = 0;
+                            let lineWidths = [];
+                            let lineSpans = [];
+                            
+                            // First pass: calculate line widths and group spans by line
+                            spans.forEach((span, index) => {
+                                if (span.textContent === '\n') {
+                                    lineWidths.push(xOffset);
+                                    maxLineWidth = Math.max(maxLineWidth, xOffset);
+                                    xOffset = 0;
+                                    currentLine++;
+                                    lineSpans[currentLine] = [];
+                                } else {
+                                    if (!lineSpans[currentLine]) lineSpans[currentLine] = [];
+                                    lineSpans[currentLine].push(span);
+                                    xOffset += ctx.measureText(span.textContent).width;
+                                }
+                            });
+                            lineWidths.push(xOffset);
+                            maxLineWidth = Math.max(maxLineWidth, xOffset);
+                            
+                            // Second pass: draw each line
+                            const centerX = (canvas.width / scale) / 2;
+                            const centerY = (canvas.height / scale) / 2;
+                            const totalHeight = lineSpans.length * lineHeight;
+                            let yOffset = centerY - (totalHeight / 2) + (lineHeight / 2);
+                            
+                            lineSpans.forEach((line, lineIndex) => {
+                                xOffset = 0;
+                                line.forEach(span => {
+                                    const spanDelay = parseFloat(span.style.animationDelay) || 0;
+                                    const spanTime = (currentTime - spanDelay) % layerSpeed;
+                                    const progress = spanTime / layerSpeed;
+                                    const weight = 200 + (300 * Math.sin(progress * Math.PI));
+                                    
+                                    ctx.font = `${weight} ${fontSize}px Offgrid`;
+                                    ctx.fillStyle = layer.style.color;
+                                    ctx.textAlign = 'left';
+                                    ctx.textBaseline = 'middle';
+                                    
+                                    const textWidth = ctx.measureText(span.textContent).width;
+                                    ctx.fillText(
+                                        span.textContent,
+                                        centerX - (lineWidths[lineIndex] / 2) + xOffset,
+                                        yOffset
+                                    );
+                                    xOffset += textWidth;
+                                });
+                                yOffset += lineHeight;
+                            });
+                        } else {
+                            // For simultaneous mode
+                            const time = (currentTime - layerDelay) % layerSpeed;
+                            const progress = time / layerSpeed;
+                            const weight = 200 + (300 * Math.sin(progress * Math.PI));
+                            
+                            ctx.font = `${weight} ${fontSize}px Offgrid`;
+                            ctx.fillStyle = layer.style.color;
+                            ctx.textAlign = 'center';
+                            ctx.textBaseline = 'middle';
+                            
+                            // Handle line breaks in simultaneous mode
+                            const lines = layer.textContent.split('\n');
+                            const totalHeight = lines.length * lineHeight;
+                            let yOffset = centerY - (totalHeight / 2) + (lineHeight / 2);
+                            
+                            lines.forEach(line => {
+                                ctx.fillText(line, centerX, yOffset);
+                                yOffset += lineHeight;
+                            });
+                        }
+                    });
+
+                    if (Date.now() - startTime < duration) {
+                        requestAnimationFrame(draw);
+                    } else {
+                        mediaRecorder.stop();
+                    }
+                }
+
+                draw();
+
+                mediaRecorder.ondataavailable = (e) => chunks.push(e.data);
+                mediaRecorder.onstop = () => {
+                    const extension = selectedMimeType.includes('webm') ? 'webm' : 'mp4';
+                    const blob = new Blob(chunks, { type: selectedMimeType });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `animation.${extension}`;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                    
+                    // Remove loading state
+                    exportButton.classList.remove('loading');
+                };
+            });
+        });
+    </script>
+</body>
+</html> 
