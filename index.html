@@ -1106,6 +1106,10 @@
                     ctx.fillStyle = getComputedStyle(document.body).backgroundColor;
                     ctx.fillRect(0, 0, canvas.width / scale, canvas.height / scale);
 
+                    // Calculate center coordinates
+                    const centerX = (canvas.width / scale) / 2;
+                    const centerY = (canvas.height / scale) / 2;
+
                     // Draw text layers
                     layers.forEach(layer => {
                         const fontSize = parseInt(layer.style.fontSize);
@@ -1144,12 +1148,14 @@
                             maxLineWidth = Math.max(maxLineWidth, xOffset);
                             
                             // Second pass: draw each line
-                            const centerX = (canvas.width / scale) / 2;
-                            const centerY = (canvas.height / scale) / 2;
                             const totalHeight = lineSpans.length * lineHeight;
                             let yOffset = centerY - (totalHeight / 2) + (lineHeight / 2);
                             
                             lineSpans.forEach((line, lineIndex) => {
+                                if (line.length === 0) {
+                                    yOffset += lineHeight;
+                                    return;
+                                }
                                 xOffset = 0;
                                 line.forEach(span => {
                                     const spanDelay = parseFloat(span.style.animationDelay) || 0;
@@ -1189,6 +1195,10 @@
                             let yOffset = centerY - (totalHeight / 2) + (lineHeight / 2);
                             
                             lines.forEach(line => {
+                                if (line.trim() === '') {
+                                    yOffset += lineHeight;
+                                    return;
+                                }
                                 ctx.fillText(line, centerX, yOffset);
                                 yOffset += lineHeight;
                             });
