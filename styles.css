@@ -1,0 +1,761 @@
+@font-face {
+    font-family: 'G2ErikaMono';
+    src: url('G2-Erika-Mono.otf') format('opentype');
+    font-weight: normal;
+    font-style: normal;
+}
+
+@font-face {
+    font-family: 'Offgrid';
+    src: url('foldy_250415Offgrid-variableV3VF.ttf') format('truetype-variations');
+    font-weight: 101 200;
+    font-variation-settings: 'wght' 101, 'wdth' 101;
+}
+
+body {
+    margin: 0;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: #fff;
+    font-family: 'Offgrid', sans-serif;
+    color: #fff;
+    overflow: hidden;
+}
+
+.controls {
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(42, 42, 42, 0.85);
+    padding: 24px 32px;
+    border-radius: 12px;
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    font-family: 'G2ErikaMono', monospace;
+    font-size: 12px;
+    z-index: 1000;
+    display: flex;
+    gap: 80px;
+    text-transform: uppercase;
+    user-select: none;
+    -webkit-user-select: none;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    transition: transform 0.3s ease, opacity 0.3s ease;
+}
+
+.controls.hidden {
+    transform: translateX(-50%) translateY(-100%);
+    opacity: 0;
+    pointer-events: none;
+}
+
+.control-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.control-group h3 {
+    margin: 0 0 4px 0;
+    font-size: 12px;
+    color: #999;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-weight: normal;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    border: none;
+    outline: none;
+    user-select: none;
+    -webkit-user-select: none;
+}
+
+.control-group:first-child .control-row:first-child {
+    margin-top: 0;
+}
+
+.control-group:first-child .control-row:first-child label {
+    margin-top: 0;
+}
+
+.control-group:first-child .control-row:first-child input[type="range"] {
+    margin-top: 0;
+}
+
+.control-group:first-child .control-row:first-child span {
+    margin-top: 0;
+}
+
+.control-row {
+    display: flex;
+    align-items: center;
+    gap: 26px;
+    height: 20px;
+}
+
+.control-row:has(input[type="range"]) {
+    gap: 15px;
+}
+
+.control-row label {
+    width: 50px;
+    font-size: 12px;
+    color: #999;
+    text-transform: uppercase;
+    font-weight: normal;
+    user-select: none;
+    -webkit-user-select: none;
+}
+
+/* Remove the special case for combined controls row since we now have consistent spacing */
+.control-row:has(.curve-selector) {
+    gap: 26px;
+}
+
+input[type="range"] {
+    width: 145px;
+    height: 4px;
+    -webkit-appearance: none;
+    background: #404040;
+    border-radius: 2px;
+    outline: none;
+    transition: all 0.3s ease;
+    margin: 0;
+}
+
+input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 14px;
+    height: 14px;
+    background: #FFFFFF;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+input[type="range"]::-webkit-slider-thumb:hover {
+    transform: scale(1.2);
+    background: #FFFFFF;
+}
+
+input[type="color"] {
+    width: 40px;
+    height: 20px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 4px;
+    cursor: pointer;
+    background: #fff;
+}
+
+#textSizeValue {
+    display: none;
+}
+
+.input-container {
+    margin-bottom: 2rem;
+    position: relative;
+    z-index: 1000;
+}
+
+input[type="text"] {
+    font-size: 1.5rem;
+    padding: 12px;
+    background: rgba(42, 42, 42, 0.95);
+    border: none;
+    color: #fff;
+    outline: none;
+    text-align: center;
+    border-radius: 6px;
+    backdrop-filter: blur(10px);
+    font-family: 'Offgrid', sans-serif;
+}
+
+.text-container {
+    position: relative;
+    height: 100vh;
+    width: 100vw;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: text;
+    overflow: hidden;
+    padding: 2rem;
+    transition: transform 0.3s ease;
+}
+
+.controls.hidden ~ .text-container {
+    transform: translateY(-80px);
+}
+
+.controls.hidden ~ .export-button,
+.controls.hidden ~ .export-options {
+    transform: translateY(100%);
+    opacity: 0;
+    pointer-events: none;
+}
+
+.export-button,
+.export-options {
+    transition: transform 0.3s ease, opacity 0.3s ease;
+}
+
+.text-layer {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -45%);
+    font-size: 5rem;
+    white-space: pre-wrap;
+    transition: font-weight 0.5s ease;
+    outline: none;
+    user-select: text;
+    -webkit-user-select: text;
+    max-width: 95vw;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+    line-height: 1.01;
+    text-align: center;
+    --weight-duration: 3s;
+    --width-duration: 3s;
+}
+
+.text-layer::selection {
+    background: rgba(255, 255, 255, 0.2);
+    color: #fff;
+}
+
+.text-layer.layer-1::selection {
+    background: rgba(0, 255, 0, 0.2);
+    color: #00ff00;
+}
+
+.text-layer.layer-2::selection {
+    background: rgba(255, 0, 255, 0.2);
+    color: #ff00ff;
+}
+
+.text-layer.layer-3::selection {
+    background: rgba(255, 255, 0, 0.2);
+    color: #ffff00;
+}
+
+.text-layer span {
+    display: inline;
+    white-space: pre-wrap;
+}
+
+.text-layer span::selection {
+    background: inherit;
+    color: inherit;
+}
+
+.text-layer.sequential span {
+    animation: weightAnimation var(--weight-duration) infinite,
+               widthAnimation var(--width-duration) infinite;
+}
+
+.text-layer.simultaneous {
+    animation: weightAnimation var(--weight-duration) infinite,
+               widthAnimation var(--width-duration) infinite;
+}
+
+.text-layer.color-animation.sequential span {
+    animation: weightAnimation var(--weight-duration) infinite,
+               widthAnimation var(--width-duration) infinite,
+               colorAnimation 3s infinite;
+}
+
+.text-layer.color-animation.simultaneous {
+    animation: weightAnimation var(--weight-duration) infinite,
+               widthAnimation var(--width-duration) infinite,
+               colorAnimation 3s infinite;
+}
+
+.layer-1 {
+    animation-delay: 0s;
+}
+
+.layer-2 {
+    animation-delay: 0.5s;
+}
+
+.layer-3 {
+    animation-delay: 0.4s;
+}
+
+@keyframes weightAnimation {
+    0% { font-weight: 101; }
+    50% { font-weight: 200; }
+    100% { font-weight: 101; }
+}
+
+@keyframes widthAnimation {
+    0% { font-stretch: 101%; }
+    50% { font-stretch: 200%; }
+    100% { font-stretch: 101%; }
+}
+
+@keyframes colorAnimation {
+    0% { color: var(--color-1); }
+    50% { color: var(--color-2); }
+    100% { color: var(--color-1); }
+}
+
+.text-layer.color-animation {
+    --color-1: currentColor;
+    --color-2: currentColor;
+}
+
+.text-layer.color-animation.layer-1 {
+    --color-1: var(--layer-1-color);
+    --color-2: var(--layer-2-color);
+}
+
+.text-layer.color-animation.layer-2 {
+    --color-1: var(--layer-2-color);
+    --color-2: var(--layer-3-color);
+}
+
+.text-layer.color-animation.layer-3 {
+    --color-1: var(--layer-3-color);
+    --color-2: var(--layer-1-color);
+}
+
+.mode-dot,
+.shadow-dot,
+.multiply-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: transform 0.2s ease, background-color 0.2s ease;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    background: #404040;
+    position: relative;
+}
+
+.mode-dot:hover,
+.shadow-dot:hover,
+.multiply-dot:hover {
+    transform: scale(1.2);
+    background: #666;
+}
+
+.mode-dot.selected,
+.shadow-dot.selected,
+.multiply-dot.selected {
+    border: 1px solid #fff;
+    background: #fff;
+}
+
+.color-dot-wrapper {
+    width: auto;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    position: relative;
+}
+
+.color-dot-wrapper .color-dot {
+    min-width: 30px;
+    height: 20px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    background: #404040;
+    color: #999;
+    font-size: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 3px;
+    box-sizing: border-box;
+}
+
+.color-dot-wrapper .color-dot:hover {
+    transform: scale(1.1);
+    background: #666;
+    color: #fff;
+}
+
+.color-dot-wrapper .color-dot.selected {
+    border: 1px solid #fff;
+    background: #fff;
+    color: #222;
+}
+
+.color-picker {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+    cursor: pointer;
+    z-index: 1;
+}
+
+.color-dots {
+    display: flex;
+    gap: 8px;
+}
+
+.mode-selector,
+.shadow-toggle,
+.multiply-toggle,
+.curve-selector,
+.color-toggle {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    width: 100px;
+}
+
+.mode-selector label,
+.shadow-toggle label,
+.multiply-toggle label,
+.curve-selector label,
+.color-toggle label {
+    width: auto;
+    min-width: 40px;
+    font-size: 12px;
+    color: #999;
+    text-transform: uppercase;
+    font-weight: normal;
+    margin: 0;
+}
+
+.curve-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: transform 0.2s ease, background-color 0.2s ease;
+    border: 1px solid transparent;
+    background: #404040;
+    position: relative;
+}
+
+.curve-dot:hover {
+    transform: scale(1.2);
+}
+
+.curve-dot.selected {
+    border: 1px solid #fff;
+    background: #fff;
+}
+
+.speed-dots {
+    display: flex;
+    gap: 8px;
+}
+
+.speed-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: transform 0.2s ease, background-color 0.2s ease;
+    border: 1px solid transparent;
+    background: #404040;
+    position: relative;
+}
+
+.speed-dot:hover {
+    transform: scale(1.2);
+}
+
+.speed-dot.selected {
+    border: 1px solid #fff;
+    background: #fff;
+}
+
+.speed-dot.filled {
+    background: #fff;
+    border: 1px solid #fff;
+}
+
+.export-button {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    background: rgba(42, 42, 42, 0.85);
+    border: none;
+    color: #999;
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-family: 'G2ErikaMono', monospace;
+    font-size: 12px;
+    cursor: pointer;
+    backdrop-filter: blur(10px);
+    transition: all 0.3s ease;
+    z-index: 1000;
+}
+
+.export-button:hover {
+    color: #fff;
+    background: rgba(42, 42, 42, 0.95);
+}
+
+.export-button.loading {
+    pointer-events: none;
+}
+
+.export-button.loading span {
+    display: inline-block;
+    animation: letterPulse 1.5s infinite;
+}
+
+.export-button.loading span:nth-child(1) { animation-delay: 0.0s; }
+.export-button.loading span:nth-child(2) { animation-delay: 0.1s; }
+.export-button.loading span:nth-child(3) { animation-delay: 0.2s; }
+.export-button.loading span:nth-child(4) { animation-delay: 0.3s; }
+.export-button.loading span:nth-child(5) { animation-delay: 0.4s; }
+.export-button.loading span:nth-child(6) { animation-delay: 0.5s; }
+
+@keyframes letterPulse {
+    0%, 100% { color: #999; }
+    50% { color: #fff; }
+}
+
+.export-options {
+    position: fixed;
+    bottom: 70px;
+    right: 20px;
+    background: rgba(42, 42, 42, 0.85);
+    padding: 8px;
+    border-radius: 6px;
+    backdrop-filter: blur(10px);
+    display: none;
+    flex-direction: column;
+    gap: 8px;
+    z-index: 1000;
+}
+
+.export-options.show {
+    display: flex;
+}
+
+.export-option {
+    background: none;
+    border: none;
+    color: #999;
+    padding: 8px;
+    font-family: 'G2ErikaMono', monospace;
+    font-size: 12px;
+    cursor: pointer;
+    text-align: left;
+    transition: color 0.3s ease;
+}
+
+.export-option:hover {
+    color: #fff;
+}
+
+.visibility-toggle {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.visibility-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: transform 0.2s ease, background-color 0.2s ease;
+    border: 1px solid transparent;
+    background: #404040;
+    position: relative;
+}
+
+.visibility-dot:hover {
+    transform: scale(1.2);
+}
+
+.visibility-dot.selected {
+    border: 1px solid #fff;
+    background: #fff;
+}
+
+.layer-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 4px;
+    height: 20px;
+}
+
+.layer-toggle {
+    margin: 0;
+    font-size: 12px;
+    color: #999;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-weight: normal;
+    cursor: pointer;
+    transition: color 0.2s ease;
+    position: relative;
+    padding-left: 20px;
+}
+
+.layer-toggle::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #404040;
+    transition: background-color 0.2s ease;
+}
+
+.layer-toggle:hover {
+    color: #fff;
+}
+
+.layer-toggle:hover::before {
+    background: #666;
+}
+
+.layer-toggle.active {
+    color: #fff;
+}
+
+.layer-toggle.active::before {
+    background: #fff;
+}
+
+.state-value {
+    width: auto;
+    min-width: 30px;
+    height: 20px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    background: #404040;
+    color: #999;
+    font-size: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 3px;
+    box-sizing: border-box;
+}
+
+.state-value:hover {
+    transform: scale(1.1);
+    background: #666;
+    color: #fff;
+}
+
+/* Color toggle styles */
+.color-toggle {
+    display: flex;
+    align-items: center;
+    gap: 2.5px;
+}
+
+.color-toggle .color-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: transform 0.2s ease, background-color 0.2s ease;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    background: #404040;
+    position: relative;
+    min-width: auto;
+    padding: 0;
+}
+
+.color-toggle .color-dot:hover {
+    transform: scale(1.2);
+    background: #666;
+}
+
+.color-toggle .color-dot.selected {
+    border: 1px solid #fff;
+    background: #fff;
+}
+
+.bg-toggle {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    width: 100px;
+}
+
+.bg-toggle label {
+    width: auto;
+    min-width: 40px;
+    font-size: 12px;
+    color: #999;
+    text-transform: uppercase;
+    font-weight: normal;
+    margin: 0;
+}
+
+.bg-toggle .color-dot-wrapper {
+    width: 14px;
+    height: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    box-sizing: border-box;
+}
+
+.bg-toggle .color-dot-wrapper .color-dot {
+    width: 14px;
+    height: 14px;
+    min-width: auto;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: transform 0.2s ease, background-color 0.2s ease;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    background: #404040;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    box-sizing: border-box;
+}
+
+.bg-toggle .color-dot-wrapper .color-dot:hover {
+    transform: scale(1.2);
+    background: #666;
+}
+
+.bg-toggle .color-dot-wrapper .color-dot.selected {
+    border: 1px solid #fff;
+    background: #fff;
+}
+
+.bg-toggle .color-dot-wrapper .color-picker {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 14px;
+    height: 14px;
+    opacity: 0;
+    cursor: pointer;
+    z-index: 1;
+    padding: 0;
+    margin: 0;
+    box-sizing: border-box;
+}
