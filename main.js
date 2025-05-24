@@ -1,4 +1,54 @@
 document.addEventListener("DOMContentLoaded", () => {
+  // Function to convert RGB to HSB
+  function rgbToHsb(r, g, b) {
+    r /= 255;
+    g /= 255;
+    b /= 255;
+
+    const max = Math.max(r, g, b);
+    const min = Math.min(r, g, b);
+    const delta = max - min;
+
+    let h = 0;
+    let s = max === 0 ? 0 : delta / max;
+    let v = max;
+
+    if (delta !== 0) {
+      if (max === r) {
+        h = ((g - b) / delta) % 6;
+      } else if (max === g) {
+        h = (b - r) / delta + 2;
+      } else {
+        h = (r - g) / delta + 4;
+      }
+
+      h = Math.round(h * 60);
+      if (h < 0) h += 360;
+    }
+
+    return {
+      h: Math.round(h),
+      s: Math.round(s * 100),
+      b: Math.round(v * 100),
+    };
+  }
+
+  // Function to convert HSB to RGB
+  function hsbToRgb(h, s, b) {
+    h = h % 360;
+    s = s / 100;
+    b = b / 100;
+
+    const k = (n) => (n + h / 60) % 6;
+    const f = (n) => b * (1 - s * Math.max(0, Math.min(k(n), 4 - k(n), 1)));
+
+    return {
+      r: Math.round(f(5) * 255),
+      g: Math.round(f(3) * 255),
+      b: Math.round(f(1) * 255),
+    };
+  }
+
   const layers = [
     document.getElementById("layer1"),
     document.getElementById("layer2"),
@@ -58,23 +108,121 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   // Handle color picker changes
-  document.querySelectorAll(".color-picker").forEach((picker) => {
-    picker.addEventListener("input", (e) => {
-      const wrapper = e.target.closest(".color-dot-wrapper");
-      const layer = wrapper.dataset.layer;
-      const color = e.target.value;
-      const dot = wrapper.querySelector(".color-dot");
+  document.querySelectorAll(".color-dot-wrapper").forEach((wrapper) => {
+    const layer = wrapper.dataset.layer;
+    const dot = wrapper.querySelector(".color-dot");
+    const hsbSliders = wrapper.querySelectorAll(".hsb-slider");
+    const pickerContainer = wrapper.querySelector(".color-picker-container");
+
+    if (!dot || !pickerContainer || !hsbSliders || hsbSliders.length !== 3)
+      return;
+
+    let closeTimeout;
+
+    // Function to close all color pickers
+    function closeAllPickers() {
+      document
+        .querySelectorAll(".color-picker-container")
+        .forEach((container) => {
+          container.classList.remove("active");
+        });
+    }
+
+    // Toggle color picker on dot click
+    dot.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const isActive = pickerContainer.classList.contains("active");
+      closeAllPickers();
+      if (!isActive) {
+        pickerContainer.classList.add("active");
+      }
+    });
+
+    // Close color picker when clicking outside
+    document.addEventListener("click", (e) => {
+      if (!wrapper.contains(e.target)) {
+        closeAllPickers();
+      }
+    });
+
+    // Handle mouse movement around the picker
+    wrapper.addEventListener("mouseleave", (e) => {
+      // Get the position of the mouse relative to the wrapper
+      const rect = wrapper.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+
+      // Only close if mouse is far enough away
+      if (x < -50 || x > rect.width + 50 || y > rect.height + 100) {
+        closeTimeout = setTimeout(() => {
+          pickerContainer.classList.remove("active");
+        }, 100);
+      }
+    });
+
+    wrapper.addEventListener("mouseenter", () => {
+      if (closeTimeout) {
+        clearTimeout(closeTimeout);
+      }
+    });
+
+    // Prevent closing when clicking inside the picker
+    pickerContainer.addEventListener("click", (e) => {
+      e.stopPropagation();
+    });
+
+    // Initialize HSB values from initial color
+    const initialColor = dot.style.background;
+    if (initialColor) {
+      let rgb;
+      if (initialColor.startsWith("rgb")) {
+        rgb = initialColor.match(/\d+/g);
+      } else if (initialColor.startsWith("#")) {
+        // Convert hex to RGB
+        const hex = initialColor.slice(1);
+        rgb = [
+          parseInt(hex.slice(0, 2), 16),
+          parseInt(hex.slice(2, 4), 16),
+          parseInt(hex.slice(4, 6), 16),
+        ];
+      }
+
+      if (rgb && rgb.length === 3) {
+        const hsb = rgbToHsb(
+          parseInt(rgb[0]),
+          parseInt(rgb[1]),
+          parseInt(rgb[2])
+        );
+        if (hsbSliders[0] && hsbSliders[1] && hsbSliders[2]) {
+          hsbSliders[0].value = hsb.h;
+          hsbSliders[1].value = hsb.s;
+          hsbSliders[2].value = hsb.b;
+        }
+      }
+    }
+
+    // Function to update color from HSB values
+    function updateColorFromHSB() {
+      if (!hsbSliders[0] || !hsbSliders[1] || !hsbSliders[2]) return;
+
+      const h = parseInt(hsbSliders[0].value) || 0;
+      const s = parseInt(hsbSliders[1].value) || 0;
+      const b = parseInt(hsbSliders[2].value) || 0;
+
+      const rgb = hsbToRgb(h, s, b);
+      const color = `rgb(${rgb.r}, ${rgb.g}, ${rgb.b})`;
+      const hexColor = rgbToHex(color).toUpperCase();
 
       // Update dot color
-      dot.style.background = color;
+      dot.style.background = hexColor;
 
       // Update layer color or background
       if (layer === "bg") {
-        document.body.style.backgroundColor = color;
+        document.body.style.backgroundColor = hexColor;
       } else {
         const layerElement = document.getElementById(`layer${layer}`);
         if (layerElement) {
-          layerElement.style.color = color;
+          layerElement.style.color = hexColor;
         }
       }
 
@@ -82,17 +230,48 @@ document.addEventListener("DOMContentLoaded", () => {
       if (document.querySelector(".color-dot").classList.contains("selected")) {
         document.documentElement.style.setProperty(
           `--layer-${layer}-color`,
-          color
+          hexColor
         );
+      }
+    }
+
+    // Handle HSB slider changes
+    hsbSliders.forEach((slider) => {
+      slider.addEventListener("input", () => {
+        updateColorFromHSB();
+      });
+    });
+
+    // Close color picker when pressing Escape
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape") {
+        closeAllPickers();
       }
     });
   });
 
+  // Function to convert RGB to hex
+  function rgbToHex(rgb) {
+    const match = rgb.match(/^rgb\((\d+),\s*(\d+),\s*(\d+)\)$/);
+    if (!match) return "#000000";
+
+    const r = parseInt(match[1]);
+    const g = parseInt(match[2]);
+    const b = parseInt(match[3]);
+
+    return "#" + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
+  }
+
   // Set initial background color
-  const bgColorPicker = document.querySelector(
-    '.color-dot-wrapper[data-layer="bg"] .color-picker'
+  const bgColorDot = document.querySelector(
+    '.color-dot-wrapper[data-layer="bg"] .color-dot'
   );
-  document.body.style.backgroundColor = bgColorPicker.value;
+  if (bgColorDot) {
+    const initialBgColor = bgColorDot.style.background;
+    if (initialBgColor) {
+      document.body.style.backgroundColor = initialBgColor;
+    }
+  }
 
   // Handle text input and update all layers
   layers.forEach((layer) => {
@@ -305,8 +484,15 @@ document.addEventListener("DOMContentLoaded", () => {
       e.target.classList.toggle("selected");
       const isSequential = e.target.classList.contains("selected");
 
+      // Store current text content and dimensions
+      const layerContents = layers.map((layer) => ({
+        text: layer.textContent,
+        width: layer.offsetWidth,
+        height: layer.offsetHeight,
+      }));
+
       // Update animation mode for all layers
-      layers.forEach((layer) => {
+      layers.forEach((layer, index) => {
         // Remove both mode classes
         layer.classList.remove("simultaneous", "sequential");
 
@@ -322,6 +508,10 @@ document.addEventListener("DOMContentLoaded", () => {
           const text = layer.innerHTML;
           layer.innerHTML = text.replace(/<span[^>]*>(.*?)<\/span>/g, "$1");
         }
+
+        // Restore original dimensions
+        layer.style.width = `${layerContents[index].width}px`;
+        layer.style.height = `${layerContents[index].height}px`;
       });
     }
   });
@@ -334,27 +524,53 @@ document.addEventListener("DOMContentLoaded", () => {
         layer.classList.contains("sequential") &&
         layer.style.opacity !== "0"
       ) {
-        const text = layer.textContent; // Use textContent instead of innerHTML
+        const text = layer.textContent;
         const weightDuration =
           layer.style.getPropertyValue("--weight-duration") || "3s";
         const widthDuration =
           layer.style.getPropertyValue("--width-duration") || "3s";
         const layerTiming = layer.style.animationTimingFunction;
 
+        // Store current dimensions
+        const width = layer.offsetWidth;
+        const height = layer.offsetHeight;
+
         // Clear the layer content
         layer.innerHTML = "";
 
-        // Create spans for each character
-        for (let i = 0; i < text.length; i++) {
-          const span = document.createElement("span");
-          span.textContent = text[i];
-          span.style.animationDuration = `${weightDuration}, ${widthDuration}`;
-          span.style.animationDelay = `${i * 0.3}s`;
-          span.style.animationTimingFunction = layerTiming;
-          span.style.setProperty("--weight-duration", weightDuration);
-          span.style.setProperty("--width-duration", widthDuration);
-          layer.appendChild(span);
-        }
+        // Split text into lines and process each line
+        const lines = text.split("\n");
+        lines.forEach((line, lineIndex) => {
+          // Create a line container
+          const lineContainer = document.createElement("div");
+          lineContainer.style.display = "block";
+          lineContainer.style.textAlign = "center";
+          lineContainer.style.width = "100%";
+
+          // Process each character in the line
+          for (let i = 0; i < line.length; i++) {
+            const span = document.createElement("span");
+            span.textContent = line[i];
+            span.style.animationDuration = `${weightDuration}, ${widthDuration}`;
+            span.style.animationDelay = `${i * 0.3}s`;
+            span.style.animationTimingFunction = layerTiming;
+            span.style.setProperty("--weight-duration", weightDuration);
+            span.style.setProperty("--width-duration", widthDuration);
+            lineContainer.appendChild(span);
+          }
+
+          // Add the line container to the layer
+          layer.appendChild(lineContainer);
+
+          // Add a line break after each line except the last one
+          if (lineIndex < lines.length - 1) {
+            layer.appendChild(document.createElement("br"));
+          }
+        });
+
+        // Restore original dimensions
+        layer.style.width = `${width}px`;
+        layer.style.height = `${height}px`;
       }
     });
   }
@@ -748,16 +964,29 @@ document.addEventListener("DOMContentLoaded", () => {
   // Function to randomize background color
   function randomizeBackground() {
     const color = getRandomColor();
-    const bgColorPicker = document.querySelector(
-      '.color-dot-wrapper[data-layer="bg"] .color-picker'
-    );
     const bgColorDot = document.querySelector(
       '.color-dot-wrapper[data-layer="bg"] .color-dot'
     );
+    const hsbSliders = document.querySelectorAll(
+      '.color-dot-wrapper[data-layer="bg"] .hsb-slider'
+    );
 
+    // Convert hex to RGB
+    const r = parseInt(color.slice(1, 3), 16);
+    const g = parseInt(color.slice(3, 5), 16);
+    const b = parseInt(color.slice(5, 7), 16);
+
+    // Convert RGB to HSB
+    const hsb = rgbToHsb(r, g, b);
+
+    // Update background color
     document.body.style.backgroundColor = color;
-    bgColorPicker.value = color;
     bgColorDot.style.background = color;
+
+    // Update HSB sliders
+    hsbSliders[0].value = hsb.h;
+    hsbSliders[1].value = hsb.s;
+    hsbSliders[2].value = hsb.b;
   }
 
   // Function to randomize all settings
@@ -992,13 +1221,26 @@ document.addEventListener("DOMContentLoaded", () => {
       const colorDot = document.querySelector(
         `.color-dot-wrapper[data-layer="${layerNum}"] .color-dot`
       );
-      const colorPicker = document.querySelector(
-        `.color-dot-wrapper[data-layer="${layerNum}"] .color-picker`
+      const hsbSliders = document.querySelectorAll(
+        `.color-dot-wrapper[data-layer="${layerNum}"] .hsb-slider`
       );
 
+      // Convert hex to RGB
+      const r = parseInt(color.slice(1, 3), 16);
+      const g = parseInt(color.slice(3, 5), 16);
+      const b = parseInt(color.slice(5, 7), 16);
+
+      // Convert RGB to HSB
+      const hsb = rgbToHsb(r, g, b);
+
+      // Update layer and dot colors
       layerElement.style.color = color;
       colorDot.style.background = color;
-      colorPicker.value = color;
+
+      // Update HSB sliders
+      hsbSliders[0].value = hsb.h;
+      hsbSliders[1].value = hsb.s;
+      hsbSliders[2].value = hsb.b;
 
       // Update CSS variables if color animation is active
       if (document.querySelector(".color-dot").classList.contains("selected")) {
@@ -1169,18 +1411,6 @@ document.addEventListener("DOMContentLoaded", () => {
     const imageData = tempCtx.getImageData(x, y, 1, 1);
     const data = imageData.data;
     return `rgb(${data[0]}, ${data[1]}, ${data[2]})`;
-  }
-
-  // Function to convert RGB to hex
-  function rgbToHex(rgb) {
-    const match = rgb.match(/^rgb\((\d+),\s*(\d+),\s*(\d+)\)$/);
-    if (!match) return "#000000";
-
-    const r = parseInt(match[1]);
-    const g = parseInt(match[2]);
-    const b = parseInt(match[3]);
-
-    return "#" + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
   }
 
   // Add click handler for Pick Colors button

@@ -98,10 +98,6 @@ body {
     height: 20px;
 }
 
-.control-row:has(input[type="range"]) {
-    gap: 15px;
-}
-
 .control-row label {
     width: 50px;
     font-size: 12px;
@@ -227,7 +223,7 @@ input[type="text"] {
     position: absolute;
     left: 50%;
     top: 50%;
-    transform: translate(-50%, -45%);
+    transform: translate(-50%, -50%);
     font-size: 5rem;
     white-space: pre-wrap;
     transition: font-weight 0.5s ease, font-size 0.3s ease;
@@ -244,6 +240,9 @@ input[type="text"] {
     text-align: center;
     --weight-duration: 3s;
     --width-duration: 3s;
+    display: flex;
+    justify-content: center;
+    align-items: center;
 }
 
 .text-container.image-mode .text-layer {
@@ -273,8 +272,9 @@ input[type="text"] {
 }
 
 .text-layer span {
-    display: inline;
+    display: inline-block;
     white-space: pre-wrap;
+    text-align: center;
 }
 
 .text-layer span::selection {
@@ -387,6 +387,8 @@ input[type="text"] {
     display: flex;
     align-items: center;
     position: relative;
+    padding: 8px;
+    margin: -8px;
 }
 
 .color-dot-wrapper .color-dot {
@@ -416,6 +418,112 @@ input[type="text"] {
     border: 1px solid #fff;
     background: #fff;
     color: #222;
+}
+
+.color-picker-container {
+    position: absolute;
+    top: calc(100% + 32px);
+    left: 50%;
+    transform: translateX(-50%);
+    margin-top: 0;
+    background: rgba(42, 42, 42, 0.85);
+    padding: 16px;
+    border-radius: 12px;
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    opacity: 0;
+    visibility: hidden;
+    z-index: 1000;
+    width: 200px;
+}
+
+.color-picker-container.active {
+    opacity: 1;
+    visibility: visible;
+}
+
+.color-picker-controls {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.color-slider {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.color-slider label {
+    width: 20px;
+    color: #999;
+    font-size: 12px;
+    text-transform: uppercase;
+}
+
+.color-slider input[type="range"] {
+    flex-grow: 1;
+    height: 4px;
+    -webkit-appearance: none;
+    background: #404040;
+    border-radius: 2px;
+    outline: none;
+    transition: all 0.3s ease;
+    margin: 0;
+}
+
+.color-slider input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 14px;
+    height: 14px;
+    background: #FFFFFF;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.color-slider input[type="range"]::-webkit-slider-thumb:hover {
+    transform: scale(1.2);
+    background: #FFFFFF;
+}
+
+.color-slider input[type="text"] {
+    width: 40px;
+    background: none;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: #fff;
+    font-family: 'G2ErikaMono', monospace;
+    font-size: 12px;
+    padding: 2px 4px;
+    border-radius: 4px;
+    text-align: center;
+}
+
+.hex-input {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.hex-input label {
+    width: 20px;
+    color: #999;
+    font-size: 12px;
+    text-transform: uppercase;
+}
+
+.hex-input input {
+    flex-grow: 1;
+    background: none;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: #fff;
+    font-family: 'G2ErikaMono', monospace;
+    font-size: 12px;
+    padding: 2px 4px;
+    border-radius: 4px;
+    text-align: center;
 }
 
 .color-picker {
@@ -733,13 +841,13 @@ input[type="text"] {
 }
 
 .bg-toggle .color-dot-wrapper {
-    width: 14px;
-    height: 14px;
+    width: auto;
+    height: 20px;
     display: flex;
     align-items: center;
-    justify-content: center;
     position: relative;
-    box-sizing: border-box;
+    padding: 8px;
+    margin: -8px;
 }
 
 .bg-toggle .color-dot-wrapper .color-dot {
@@ -748,26 +856,28 @@ input[type="text"] {
     min-width: auto;
     border-radius: 50%;
     cursor: pointer;
-    transition: transform 0.2s ease, background-color 0.2s ease;
+    transition: all 0.2s ease;
     border: 1px solid rgba(255, 255, 255, 0.2);
     background: #404040;
-    padding: 0;
-    margin: 0;
+    color: #999;
+    font-size: 12px;
     display: flex;
     align-items: center;
     justify-content: center;
-    position: relative;
+    padding: 0;
     box-sizing: border-box;
 }
 
 .bg-toggle .color-dot-wrapper .color-dot:hover {
     transform: scale(1.2);
     background: #666;
+    color: #fff;
 }
 
 .bg-toggle .color-dot-wrapper .color-dot.selected {
     border: 1px solid #fff;
     background: #fff;
+    color: #222;
 }
 
 .bg-toggle .color-dot-wrapper .color-picker {
