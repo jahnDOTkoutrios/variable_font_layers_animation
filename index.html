@@ -6,6 +6,7 @@
     <title>Variable Font Animation</title>
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90' font-family='Offgrid'>O</text></svg>">
     <link rel="stylesheet" href="styles.css">
+    <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
 </head>
 <body>
     <div class="controls">
@@ -109,6 +110,28 @@
                 </div>
             </div>
         </div>
+    </div>
+
+    <div class="image-controls">
+        <div class="image-control-group">
+            <div class="control-row image-upload-row">
+                <input type="file" id="imageUpload" accept="image/*" style="display: none;">
+                <button class="upload-button">Upload Image</button>
+            </div>
+            <div class="control-row image-pick-colors-row">
+                <button class="pick-colors-button">Pick Colors</button>
+            </div>
+            <div class="control-row image-blur-row">
+                <div class="blur-control">
+                    <label>Blur</label>
+                    <input type="range" min="0" max="20" step="1" value="0" id="blurAmount">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="canvas-container">
+        <canvas id="imageCanvas"></canvas>
     </div>
 
     <div class="text-container">

@@ -109,14 +109,38 @@ document.addEventListener("DOMContentLoaded", () => {
       // Get the text content with line breaks preserved
       const text = layer.textContent;
 
-      // Update other layers first
+      // Update all layers first to ensure synchronization
       layers.forEach((l) => {
         if (l !== layer) {
+          // Store current animation properties
+          const isSequential = l.classList.contains("sequential");
+          const layerSpeed = parseFloat(l.style.animationDuration) || 3;
+          const layerTiming = l.style.animationTimingFunction;
+
+          // First update the text content
           l.textContent = text;
+
+          // If in sequential mode, rebuild spans
+          if (isSequential) {
+            // Clear and rebuild the content
+            l.innerHTML = "";
+
+            // Create spans for each character, preserving line breaks
+            for (let i = 0; i < text.length; i++) {
+              const span = document.createElement("span");
+              span.textContent = text[i];
+              span.style.animationDuration = `${layerSpeed}s`;
+              span.style.animationDelay = `${i * 0.3}s`;
+              span.style.animationTimingFunction = layerTiming;
+              span.style.setProperty("--weight-duration", `${layerSpeed}s`);
+              span.style.setProperty("--width-duration", `${layerSpeed}s`);
+              l.appendChild(span);
+            }
+          }
         }
       });
 
-      // Update spans if in sequential mode
+      // Update spans for the active layer if in sequential mode
       if (layer.classList.contains("sequential")) {
         // Store the current animation properties
         const layerSpeed = parseFloat(layer.style.animationDuration) || 3;
@@ -125,13 +149,15 @@ document.addEventListener("DOMContentLoaded", () => {
         // Clear and rebuild the content
         layer.innerHTML = "";
 
-        // Create spans for each character
+        // Create spans for each character, preserving line breaks
         for (let i = 0; i < text.length; i++) {
           const span = document.createElement("span");
           span.textContent = text[i];
           span.style.animationDuration = `${layerSpeed}s`;
           span.style.animationDelay = `${i * 0.3}s`;
           span.style.animationTimingFunction = layerTiming;
+          span.style.setProperty("--weight-duration", `${layerSpeed}s`);
+          span.style.setProperty("--width-duration", `${layerSpeed}s`);
           layer.appendChild(span);
         }
 
@@ -182,6 +208,14 @@ document.addEventListener("DOMContentLoaded", () => {
       e.preventDefault();
       const text = e.clipboardData.getData("text/plain");
       document.execCommand("insertText", false, text);
+    });
+
+    // Handle keydown events to ensure consistent line break handling
+    layer.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        document.execCommand("insertLineBreak");
+      }
     });
   });
 
@@ -295,61 +329,32 @@ document.addEventListener("DOMContentLoaded", () => {
   // Function to wrap each letter in a span
   function updateLetterSpans() {
     layers.forEach((layer) => {
-      if (layer.classList.contains("sequential")) {
-        const text = layer.innerHTML;
-        const layerSpeed = parseFloat(layer.style.animationDuration) || 3;
+      // Only process visible layers that are in sequential mode
+      if (
+        layer.classList.contains("sequential") &&
+        layer.style.opacity !== "0"
+      ) {
+        const text = layer.textContent; // Use textContent instead of innerHTML
+        const weightDuration =
+          layer.style.getPropertyValue("--weight-duration") || "3s";
+        const widthDuration =
+          layer.style.getPropertyValue("--width-duration") || "3s";
         const layerTiming = layer.style.animationTimingFunction;
 
-        // Create a temporary container to hold the text
-        const temp = document.createElement("div");
-        temp.innerHTML = text;
-
-        // Process each text node
-        const processNode = (node) => {
-          if (node.nodeType === Node.TEXT_NODE) {
-            const text = node.textContent;
-            const spans = [];
-            for (let i = 0; i < text.length; i++) {
-              const span = document.createElement("span");
-              span.textContent = text[i];
-              span.style.animationDuration = `${layerSpeed}s`;
-              span.style.animationDelay = `${i * 0.3}s`;
-              span.style.animationTimingFunction = layerTiming;
-              spans.push(span);
-            }
-            return spans;
-          } else if (node.nodeType === Node.ELEMENT_NODE) {
-            const newElement = document.createElement(node.tagName);
-            // Copy all attributes from the original element
-            Array.from(node.attributes).forEach((attr) => {
-              newElement.setAttribute(attr.name, attr.value);
-            });
-            // Process child nodes
-            Array.from(node.childNodes).forEach((child) => {
-              const processed = processNode(child);
-              if (Array.isArray(processed)) {
-                processed.forEach((span) => newElement.appendChild(span));
-              } else {
-                newElement.appendChild(processed);
-              }
-            });
-            return newElement;
-          }
-          return node;
-        };
-
-        // Process all nodes
-        const processed = Array.from(temp.childNodes).map(processNode);
-
-        // Clear and append all processed nodes
+        // Clear the layer content
         layer.innerHTML = "";
-        processed.forEach((node) => {
-          if (Array.isArray(node)) {
-            node.forEach((span) => layer.appendChild(span));
-          } else {
-            layer.appendChild(node);
-          }
-        });
+
+        // Create spans for each character
+        for (let i = 0; i < text.length; i++) {
+          const span = document.createElement("span");
+          span.textContent = text[i];
+          span.style.animationDuration = `${weightDuration}, ${widthDuration}`;
+          span.style.animationDelay = `${i * 0.3}s`;
+          span.style.animationTimingFunction = layerTiming;
+          span.style.setProperty("--weight-duration", weightDuration);
+          span.style.setProperty("--width-duration", widthDuration);
+          layer.appendChild(span);
+        }
       }
     });
   }
@@ -420,17 +425,23 @@ document.addEventListener("DOMContentLoaded", () => {
       const canvas = document.createElement("canvas");
       const ctx = canvas.getContext("2d");
 
-      // Set canvas size with higher resolution
+      // Set canvas size based on mode
       const scale = 2; // Scale factor for higher resolution
-      canvas.width = window.innerWidth * scale;
-      canvas.height = window.innerHeight * scale;
+      if (isImageMode) {
+        // In image mode, use the canvas container dimensions
+        canvas.width = canvasContainer.offsetWidth * scale;
+        canvas.height = canvasContainer.offsetHeight * scale;
+      } else {
+        // In normal mode, use window dimensions
+        canvas.width = window.innerWidth * scale;
+        canvas.height = window.innerHeight * scale;
+      }
 
       // Scale the context to match the higher resolution
       ctx.scale(scale, scale);
 
       // Get supported mime type
       const mimeTypes = ["video/webm;codecs=vp8", "video/webm", "video/mp4"];
-
       let selectedMimeType = "";
       for (const mimeType of mimeTypes) {
         if (MediaRecorder.isTypeSupported(mimeType)) {
@@ -456,113 +467,95 @@ document.addEventListener("DOMContentLoaded", () => {
       mediaRecorder.start();
 
       const startTime = Date.now();
-      let frameCount = 0;
 
-      function draw() {
+      async function draw() {
         // Clear canvas
         ctx.fillStyle = getComputedStyle(document.body).backgroundColor;
         ctx.fillRect(0, 0, canvas.width / scale, canvas.height / scale);
 
-        // Calculate center coordinates
-        const centerX = canvas.width / scale / 2;
-        const centerY = canvas.height / scale / 2;
+        if (isImageMode) {
+          // Draw the image canvas with blur
+          const imageCanvas = document.getElementById("imageCanvas");
+          ctx.drawImage(
+            imageCanvas,
+            0,
+            0,
+            canvas.width / scale,
+            canvas.height / scale
+          );
+        }
 
         // Draw text layers
-        layers.forEach((layer) => {
-          const fontSize = parseInt(layer.style.fontSize);
+        for (const layer of layers) {
+          // Create a temporary canvas for each layer
+          const layerCanvas = document.createElement("canvas");
+          const layerCtx = layerCanvas.getContext("2d");
+
+          // Set the temporary canvas size to match the layer
+          const rect = layer.getBoundingClientRect();
+          layerCanvas.width = rect.width * scale;
+          layerCanvas.height = rect.height * scale;
+          layerCtx.scale(scale, scale);
+
+          // Draw the layer content
+          const html = layer.innerHTML;
+          const tempDiv = document.createElement("div");
+          tempDiv.innerHTML = html;
+          tempDiv.style.position = "absolute";
+          tempDiv.style.left = "-9999px";
+          tempDiv.style.top = "-9999px";
+          document.body.appendChild(tempDiv);
+
+          // Apply the same styles as the original layer
+          tempDiv.style.fontFamily = getComputedStyle(layer).fontFamily;
+          tempDiv.style.fontSize = getComputedStyle(layer).fontSize;
+          tempDiv.style.color = getComputedStyle(layer).color;
+          tempDiv.style.whiteSpace = "pre-wrap";
+          tempDiv.style.textAlign = "center";
+
+          // Calculate the current animation state
           const currentTime = (Date.now() - startTime) / 1000;
           const layerDelay = parseFloat(layer.style.animationDelay) || 0;
           const layerSpeed = parseFloat(layer.style.animationDuration) || 3;
+          const time = (currentTime - layerDelay) % layerSpeed;
+          const progress = time / layerSpeed;
+          const weight = 101 + 99 * Math.sin(progress * Math.PI);
 
-          // Get the computed style of the layer
-          const layerStyle = window.getComputedStyle(layer);
-          const lineHeight = parseFloat(layerStyle.lineHeight);
+          // Apply the current animation state
+          tempDiv.style.fontVariationSettings = `"wght" ${weight}`;
 
-          if (layer.classList.contains("sequential")) {
-            // For sequential mode, draw each span separately
-            const spans = layer.querySelectorAll("span");
-            let currentLine = 0;
-            let xOffset = 0;
-            let maxLineWidth = 0;
-            let lineWidths = [];
-            let lineSpans = [];
+          // Convert the HTML to an image
+          const dataUrl = await html2canvas(tempDiv, {
+            scale: scale,
+            backgroundColor: null,
+            logging: false,
+            useCORS: true,
+          }).then((canvas) => canvas.toDataURL());
 
-            // First pass: calculate line widths and group spans by line
-            spans.forEach((span, index) => {
-              if (span.textContent === "\n") {
-                lineWidths.push(xOffset);
-                maxLineWidth = Math.max(maxLineWidth, xOffset);
-                xOffset = 0;
-                currentLine++;
-                lineSpans[currentLine] = [];
-              } else {
-                if (!lineSpans[currentLine]) lineSpans[currentLine] = [];
-                lineSpans[currentLine].push(span);
-                xOffset += ctx.measureText(span.textContent).width;
-              }
-            });
-            lineWidths.push(xOffset);
-            maxLineWidth = Math.max(maxLineWidth, xOffset);
+          // Remove the temporary div
+          document.body.removeChild(tempDiv);
 
-            // Second pass: draw each line
-            const totalHeight = lineSpans.length * lineHeight;
-            let yOffset = centerY - totalHeight / 2 + lineHeight / 2;
+          // Draw the layer image onto the main canvas
+          const img = new Image();
+          img.src = dataUrl;
+          await new Promise((resolve) => {
+            img.onload = () => {
+              // Calculate center position
+              const centerX = canvas.width / scale / 2;
+              const centerY = canvas.height / scale / 2;
 
-            lineSpans.forEach((line, lineIndex) => {
-              if (line.length === 0) {
-                yOffset += lineHeight;
-                return;
-              }
-              xOffset = 0;
-              line.forEach((span) => {
-                const spanDelay = parseFloat(span.style.animationDelay) || 0;
-                const spanTime = (currentTime - spanDelay) % layerSpeed;
-                const progress = spanTime / layerSpeed;
-                const weight = 101 + 99 * Math.sin(progress * Math.PI);
-
-                ctx.font = `${fontSize}px Offgrid`;
-                ctx.fillStyle = layer.style.color;
-                ctx.textAlign = "left";
-                ctx.textBaseline = "middle";
-                ctx.fontVariationSettings = `"wght" ${weight}`;
-
-                const textWidth = ctx.measureText(span.textContent).width;
-                ctx.fillText(
-                  span.textContent,
-                  centerX - lineWidths[lineIndex] / 2 + xOffset,
-                  yOffset
-                );
-                xOffset += textWidth;
-              });
-              yOffset += lineHeight;
-            });
-          } else {
-            // For simultaneous mode
-            const time = (currentTime - layerDelay) % layerSpeed;
-            const progress = time / layerSpeed;
-            const weight = 101 + 99 * Math.sin(progress * Math.PI);
-
-            ctx.font = `${fontSize}px Offgrid`;
-            ctx.fillStyle = layer.style.color;
-            ctx.textAlign = "center";
-            ctx.textBaseline = "middle";
-            ctx.fontVariationSettings = `"wght" ${weight}`;
-
-            // Handle line breaks in simultaneous mode
-            const lines = layer.textContent.split("\n");
-            const totalHeight = lines.length * lineHeight;
-            let yOffset = centerY - totalHeight / 2 + lineHeight / 2;
-
-            lines.forEach((line) => {
-              if (line.trim() === "") {
-                yOffset += lineHeight;
-                return;
-              }
-              ctx.fillText(line, centerX, yOffset);
-              yOffset += lineHeight;
-            });
-          }
-        });
+              // Draw the layer centered
+              ctx.drawImage(
+                img,
+                centerX - rect.width / 2,
+                centerY - rect.height / 2,
+                rect.width,
+                rect.height
+              );
+              resolve();
+            };
+          });
+        }
 
         if (Date.now() - startTime < duration) {
           requestAnimationFrame(draw);
@@ -597,6 +590,9 @@ document.addEventListener("DOMContentLoaded", () => {
     toggle.addEventListener("click", function () {
       const layer = this.dataset.layer;
       const isActive = this.classList.contains("active");
+      const isSequential = document
+        .querySelector(".mode-dot")
+        .classList.contains("selected");
 
       // Toggle active class
       this.classList.toggle("active");
@@ -605,6 +601,32 @@ document.addEventListener("DOMContentLoaded", () => {
       const layerElement = document.getElementById(`layer${layer}`);
       layerElement.style.opacity = isActive ? "0" : "1";
       layerElement.style.pointerEvents = isActive ? "none" : "auto";
+
+      // If in sequential mode, update all layers
+      if (isSequential) {
+        // First, ensure all visible layers have the sequential class
+        layers.forEach((l) => {
+          if (l.style.opacity !== "0") {
+            l.classList.remove("simultaneous");
+            l.classList.add("sequential");
+          } else {
+            // Remove sequential class from hidden layers
+            l.classList.remove("sequential");
+            l.classList.add("simultaneous");
+          }
+        });
+
+        // Reset all layers' content to plain text first
+        layers.forEach((l) => {
+          if (l.style.opacity !== "0") {
+            const text = l.textContent;
+            l.innerHTML = text;
+          }
+        });
+
+        // Then update the spans for visible layers
+        updateLetterSpans();
+      }
     });
   });
 
@@ -827,16 +849,91 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
+  // Function to toggle image mode
+  function toggleImageMode() {
+    isImageMode = !isImageMode;
+
+    // Toggle image UI and canvas visibility
+    document
+      .querySelector(".image-controls")
+      .classList.toggle("active", isImageMode);
+    document
+      .querySelector(".image-upload-row")
+      .classList.toggle("active", isImageMode);
+    document
+      .querySelector(".image-pick-colors-row")
+      .classList.toggle("active", isImageMode);
+    document
+      .querySelector(".image-blur-row")
+      .classList.toggle("active", isImageMode);
+    canvasContainer.classList.toggle("active", isImageMode);
+
+    // Toggle text container size and constraints
+    textContainer.classList.toggle("image-mode", isImageMode);
+
+    if (isImageMode) {
+      // Get canvas container dimensions
+      const canvasWidth = canvasContainer.offsetWidth;
+      const canvasHeight = canvasContainer.offsetHeight;
+
+      // Set text container dimensions to match canvas container
+      textContainer.style.width = `${canvasWidth}px`;
+      textContainer.style.height = `${canvasHeight}px`;
+      textContainer.style.maxWidth = `${canvasWidth}px`;
+      textContainer.style.maxHeight = `${canvasHeight}px`;
+      textContainer.style.overflow = "hidden";
+      textContainer.style.wordWrap = "break-word";
+
+      // Set smaller size when entering image mode
+      layers.forEach((layer) => {
+        layer.style.fontSize = "100px";
+        layer.style.width = `${canvasWidth}px`;
+        layer.style.maxWidth = `${canvasWidth}px`;
+        layer.style.overflow = "hidden";
+        layer.style.wordWrap = "break-word";
+      });
+    } else {
+      // Reset text container constraints when exiting image mode
+      textContainer.style.width = "";
+      textContainer.style.height = "";
+      textContainer.style.maxWidth = "";
+      textContainer.style.maxHeight = "";
+      textContainer.style.overflow = "";
+      textContainer.style.wordWrap = "";
+
+      // Reset to default size and remove constraints
+      layers.forEach((layer) => {
+        layer.style.fontSize = "250px";
+        layer.style.width = "";
+        layer.style.maxWidth = "";
+        layer.style.overflow = "";
+        layer.style.wordWrap = "";
+      });
+    }
+  }
+
   // Function to toggle fullscreen
   function toggleFullscreen() {
     const controls = document.querySelector(".controls");
-    controls.classList.toggle("hidden");
+    const textContainer = document.querySelector(".text-container");
+
+    // Only move text if we're not in image mode
+    if (!isImageMode) {
+      controls.classList.toggle("hidden");
+      textContainer.style.transform = controls.classList.contains("hidden")
+        ? "translateY(-80px)"
+        : "translateY(0)";
+    }
   }
 
   // Add hotkey listeners
   document.addEventListener("keydown", (e) => {
-    if (e.key === "Escape" && isTyping) {
-      document.activeElement.blur();
+    if (e.key === "Escape") {
+      if (isTyping) {
+        document.activeElement.blur();
+      } else if (isImageMode) {
+        toggleImageMode();
+      }
       return;
     }
 
@@ -854,6 +951,9 @@ document.addEventListener("DOMContentLoaded", () => {
         break;
       case "f":
         toggleFullscreen();
+        break;
+      case "i":
+        toggleImageMode();
         break;
       case "1":
       case "2":
@@ -909,4 +1009,220 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     });
   }
+
+  // Image handling
+  const imageUploadRow = document.querySelector(".image-upload-row");
+  const imageEffectsRow = document.querySelector(".image-effects-row");
+  const uploadButton = document.querySelector(".upload-button");
+  const imageUpload = document.getElementById("imageUpload");
+  const canvas = document.getElementById("imageCanvas");
+  const canvasContainer = document.querySelector(".canvas-container");
+  const ctx = canvas.getContext("2d");
+  const textContainer = document.querySelector(".text-container");
+  let originalImage = null;
+  let isImageMode = false;
+
+  // Set canvas size
+  canvas.width = 1080;
+  canvas.height = 1080;
+
+  // Draw image with blur effect
+  function drawImage() {
+    if (!originalImage) return;
+
+    // Clear the canvas
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // Calculate scaled dimensions to fill canvas with significant extra zoom
+    const scaleX = (canvas.width * 1.5) / originalImage.width; // 50% extra zoom
+    const scaleY = (canvas.height * 1.5) / originalImage.height; // 50% extra zoom
+    const scale = Math.max(scaleX, scaleY);
+
+    const scaledWidth = originalImage.width * scale;
+    const scaledHeight = originalImage.height * scale;
+
+    // Calculate center position
+    const centerX = (canvas.width - scaledWidth) / 2;
+    const centerY = (canvas.height - scaledHeight) / 2;
+
+    // Apply offset from dragging
+    const x = centerX + imageOffsetX;
+    const y = centerY + imageOffsetY;
+
+    // Get blur amount
+    const blurSlider = document.getElementById("blurAmount");
+    const blurAmount = blurSlider ? parseFloat(blurSlider.value) : 0;
+
+    // Apply blur effect using CSS filter
+    canvas.style.filter = `blur(${blurAmount}px)`;
+
+    // Draw image
+    ctx.drawImage(originalImage, x, y, scaledWidth, scaledHeight);
+  }
+
+  // Load default image
+  const defaultImage = new Image();
+  defaultImage.onload = () => {
+    originalImage = defaultImage;
+    drawImage();
+  };
+  defaultImage.src = "KMB_kirchner_alpaufzug_website.webp";
+
+  let imageOffsetX = 0;
+  let imageOffsetY = 0;
+  let isDragging = false;
+  let lastMouseX = 0;
+  let lastMouseY = 0;
+
+  // Handle mouse events for dragging
+  canvas.addEventListener("mousedown", (e) => {
+    if (!originalImage) return;
+    isDragging = true;
+    lastMouseX = e.clientX;
+    lastMouseY = e.clientY;
+  });
+
+  canvas.addEventListener("mousemove", (e) => {
+    if (!isDragging || !originalImage) return;
+
+    const deltaX = e.clientX - lastMouseX;
+    const deltaY = e.clientY - lastMouseY;
+
+    imageOffsetX += deltaX;
+    imageOffsetY += deltaY;
+
+    lastMouseX = e.clientX;
+    lastMouseY = e.clientY;
+
+    drawImage();
+  });
+
+  canvas.addEventListener("mouseup", () => {
+    isDragging = false;
+  });
+
+  canvas.addEventListener("mouseleave", () => {
+    isDragging = false;
+  });
+
+  // Image mode text size control
+  const imageTextSizeInput = document.getElementById("imageTextSizeInput");
+  if (imageTextSizeInput) {
+    imageTextSizeInput.addEventListener("input", () => {
+      const size = imageTextSizeInput.value;
+      layers.forEach((layer) => {
+        layer.style.fontSize = `${size}px`;
+      });
+    });
+  }
+
+  // Handle image upload
+  imageUpload.addEventListener("change", (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const img = new Image();
+        img.onload = () => {
+          originalImage = img;
+          drawImage();
+        };
+        img.src = event.target.result;
+      };
+      reader.readAsDataURL(file);
+    }
+  });
+
+  // Add blur amount slider event listener
+  const blurSlider = document.getElementById("blurAmount");
+  if (blurSlider) {
+    blurSlider.addEventListener("input", () => {
+      drawImage();
+    });
+  }
+
+  // Function to get random color from image
+  function getRandomColorFromImage() {
+    if (!originalImage) return null;
+
+    const tempCanvas = document.createElement("canvas");
+    const tempCtx = tempCanvas.getContext("2d");
+
+    // Scale image to fill canvas
+    const scaleX = canvas.width / originalImage.width;
+    const scaleY = canvas.height / originalImage.height;
+    const scale = Math.max(scaleX, scaleY);
+    const width = originalImage.width * scale;
+    const height = originalImage.height * scale;
+    const offsetX = (canvas.width - width) / 2 + imageOffsetX;
+    const offsetY = (canvas.height - height) / 2 + imageOffsetY;
+
+    tempCanvas.width = width;
+    tempCanvas.height = height;
+    tempCtx.drawImage(originalImage, 0, 0, width, height);
+
+    // Get random coordinates within the visible image area
+    const x = Math.floor(Math.random() * width);
+    const y = Math.floor(Math.random() * height);
+
+    // Get color at coordinates
+    const imageData = tempCtx.getImageData(x, y, 1, 1);
+    const data = imageData.data;
+    return `rgb(${data[0]}, ${data[1]}, ${data[2]})`;
+  }
+
+  // Function to convert RGB to hex
+  function rgbToHex(rgb) {
+    const match = rgb.match(/^rgb\((\d+),\s*(\d+),\s*(\d+)\)$/);
+    if (!match) return "#000000";
+
+    const r = parseInt(match[1]);
+    const g = parseInt(match[2]);
+    const b = parseInt(match[3]);
+
+    return "#" + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
+  }
+
+  // Add click handler for Pick Colors button
+  document
+    .querySelector(".pick-colors-button")
+    .addEventListener("click", () => {
+      if (!originalImage) return;
+
+      // Get three random colors from the image
+      const colors = Array(3)
+        .fill()
+        .map(() => getRandomColorFromImage());
+
+      // Update layer colors
+      colors.forEach((color, index) => {
+        const layerNum = index + 1;
+        const layerElement = document.getElementById(`layer${layerNum}`);
+        const colorDot = document.querySelector(
+          `.color-dot-wrapper[data-layer="${layerNum}"] .color-dot`
+        );
+        const colorPicker = document.querySelector(
+          `.color-dot-wrapper[data-layer="${layerNum}"] .color-picker`
+        );
+
+        layerElement.style.color = color;
+        colorDot.style.background = color;
+        colorPicker.value = rgbToHex(color);
+
+        // Update CSS variables if color animation is active
+        if (
+          document.querySelector(".color-dot").classList.contains("selected")
+        ) {
+          document.documentElement.style.setProperty(
+            `--layer-${layerNum}-color`,
+            color
+          );
+        }
+      });
+    });
+
+  // Upload button click
+  uploadButton.addEventListener("click", () => {
+    imageUpload.click();
+  });
 });
