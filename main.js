@@ -99,12 +99,17 @@ document.addEventListener("DOMContentLoaded", () => {
     textSizeValue.textContent = `${size} px`;
     layers.forEach((layer) => {
       layer.style.fontSize = `${size}px`;
+      // Ensure layer width matches container width
+      layer.style.width = "100%";
+      layer.style.maxWidth = "100%";
     });
   });
 
   // Set initial size
   layers.forEach((layer) => {
     layer.style.fontSize = "250px";
+    layer.style.width = "100%";
+    layer.style.maxWidth = "100%";
   });
 
   // Handle color picker changes
@@ -118,6 +123,7 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
 
     let closeTimeout;
+    let isPickerActive = false;
 
     // Function to close all color pickers
     function closeAllPickers() {
@@ -126,6 +132,7 @@ document.addEventListener("DOMContentLoaded", () => {
         .forEach((container) => {
           container.classList.remove("active");
         });
+      isPickerActive = false;
     }
 
     // Toggle color picker on dot click
@@ -135,6 +142,7 @@ document.addEventListener("DOMContentLoaded", () => {
       closeAllPickers();
       if (!isActive) {
         pickerContainer.classList.add("active");
+        isPickerActive = true;
       }
     });
 
@@ -147,6 +155,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // Handle mouse movement around the picker
     wrapper.addEventListener("mouseleave", (e) => {
+      if (!isPickerActive) return; // Don't close if picker is active
+
       // Get the position of the mouse relative to the wrapper
       const rect = wrapper.getBoundingClientRect();
       const x = e.clientX - rect.left;
@@ -155,7 +165,9 @@ document.addEventListener("DOMContentLoaded", () => {
       // Only close if mouse is far enough away
       if (x < -50 || x > rect.width + 50 || y > rect.height + 100) {
         closeTimeout = setTimeout(() => {
-          pickerContainer.classList.remove("active");
+          if (!isPickerActive) {
+            pickerContainer.classList.remove("active");
+          }
         }, 100);
       }
     });
@@ -169,6 +181,16 @@ document.addEventListener("DOMContentLoaded", () => {
     // Prevent closing when clicking inside the picker
     pickerContainer.addEventListener("click", (e) => {
       e.stopPropagation();
+    });
+
+    // Keep picker open when interacting with sliders
+    hsbSliders.forEach((slider) => {
+      slider.addEventListener("mousedown", () => {
+        isPickerActive = true;
+      });
+      slider.addEventListener("mouseup", () => {
+        isPickerActive = true;
+      });
     });
 
     // Initialize HSB values from initial color
@@ -219,6 +241,10 @@ document.addEventListener("DOMContentLoaded", () => {
       // Update layer color or background
       if (layer === "bg") {
         document.body.style.backgroundColor = hexColor;
+        // Redraw the image if we're in image mode
+        if (isImageMode && originalImage) {
+          drawImage();
+        }
       } else {
         const layerElement = document.getElementById(`layer${layer}`);
         if (layerElement) {
@@ -276,6 +302,11 @@ document.addEventListener("DOMContentLoaded", () => {
   // Handle text input and update all layers
   layers.forEach((layer) => {
     layer.addEventListener("input", (e) => {
+      // Only process input in normal mode
+      if (layer.classList.contains("sequential")) {
+        return;
+      }
+
       // Save selection
       const selection = window.getSelection();
       const range = selection.getRangeAt(0);
@@ -301,89 +332,24 @@ document.addEventListener("DOMContentLoaded", () => {
 
           // If in sequential mode, rebuild spans
           if (isSequential) {
-            // Clear and rebuild the content
-            l.innerHTML = "";
-
-            // Create spans for each character, preserving line breaks
-            for (let i = 0; i < text.length; i++) {
-              const span = document.createElement("span");
-              span.textContent = text[i];
-              span.style.animationDuration = `${layerSpeed}s`;
-              span.style.animationDelay = `${i * 0.3}s`;
-              span.style.animationTimingFunction = layerTiming;
-              span.style.setProperty("--weight-duration", `${layerSpeed}s`);
-              span.style.setProperty("--width-duration", `${layerSpeed}s`);
-              l.appendChild(span);
-            }
+            updateLetterSpans();
           }
         }
       });
 
       // Update spans for the active layer if in sequential mode
       if (layer.classList.contains("sequential")) {
-        // Store the current animation properties
-        const layerSpeed = parseFloat(layer.style.animationDuration) || 3;
-        const layerTiming = layer.style.animationTimingFunction;
-
-        // Clear and rebuild the content
-        layer.innerHTML = "";
-
-        // Create spans for each character, preserving line breaks
-        for (let i = 0; i < text.length; i++) {
-          const span = document.createElement("span");
-          span.textContent = text[i];
-          span.style.animationDuration = `${layerSpeed}s`;
-          span.style.animationDelay = `${i * 0.3}s`;
-          span.style.animationTimingFunction = layerTiming;
-          span.style.setProperty("--weight-duration", `${layerSpeed}s`);
-          span.style.setProperty("--width-duration", `${layerSpeed}s`);
-          layer.appendChild(span);
-        }
-
-        // Try to restore selection
-        try {
-          const newRange = document.createRange();
-
-          // Find the start and end nodes
-          const startNode =
-            layer.childNodes[
-              Math.min(startOffset, layer.childNodes.length - 1)
-            ] || layer;
-          const endNode = isCollapsed
-            ? startNode
-            : layer.childNodes[
-                Math.min(endOffset, layer.childNodes.length - 1)
-              ] || layer;
-
-          // Set the range
-          newRange.setStart(startNode, 0);
-          if (!isCollapsed) {
-            newRange.setEnd(endNode, endNode.textContent.length);
-          }
-
-          selection.removeAllRanges();
-          selection.addRange(newRange);
-        } catch (error) {
-          console.log("Error restoring selection:", error);
-        }
-      } else {
-        // For non-sequential mode, just restore the cursor position
-        try {
-          const newRange = document.createRange();
-          newRange.setStart(startContainer, startOffset);
-          if (!isCollapsed) {
-            newRange.setEnd(endContainer, endOffset);
-          }
-          selection.removeAllRanges();
-          selection.addRange(newRange);
-        } catch (error) {
-          console.log("Error restoring cursor position:", error);
-        }
+        updateLetterSpans();
       }
     });
 
     // Handle paste events to preserve formatting
     layer.addEventListener("paste", (e) => {
+      // Only process paste in normal mode
+      if (layer.classList.contains("sequential")) {
+        e.preventDefault();
+        return;
+      }
       e.preventDefault();
       const text = e.clipboardData.getData("text/plain");
       document.execCommand("insertText", false, text);
@@ -391,6 +357,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // Handle keydown events to ensure consistent line break handling
     layer.addEventListener("keydown", (e) => {
+      // Only process keydown in normal mode
+      if (layer.classList.contains("sequential")) {
+        e.preventDefault();
+        return;
+      }
       if (e.key === "Enter") {
         e.preventDefault();
         document.execCommand("insertLineBreak");
@@ -473,6 +444,16 @@ document.addEventListener("DOMContentLoaded", () => {
         layer.style.animationTimingFunction = isExp
           ? "cubic-bezier(0.95, 0.05, 0.795, 0.035)"
           : "ease-in-out";
+
+        // If in sequential mode, update all spans
+        if (layer.classList.contains("sequential")) {
+          const spans = layer.querySelectorAll("span");
+          spans.forEach((span) => {
+            span.style.animationTimingFunction = isExp
+              ? "cubic-bezier(0.95, 0.05, 0.795, 0.035)"
+              : "ease-in-out";
+          });
+        }
       });
     }
   });
@@ -484,15 +465,11 @@ document.addEventListener("DOMContentLoaded", () => {
       e.target.classList.toggle("selected");
       const isSequential = e.target.classList.contains("selected");
 
-      // Store current text content and dimensions
-      const layerContents = layers.map((layer) => ({
-        text: layer.textContent,
-        width: layer.offsetWidth,
-        height: layer.offsetHeight,
-      }));
+      // Store current text content
+      const baseText = layers[0].textContent;
 
       // Update animation mode for all layers
-      layers.forEach((layer, index) => {
+      layers.forEach((layer) => {
         // Remove both mode classes
         layer.classList.remove("simultaneous", "sequential");
 
@@ -502,75 +479,136 @@ document.addEventListener("DOMContentLoaded", () => {
         // Handle the text content based on mode
         if (isSequential) {
           // For sequential mode, we'll let updateLetterSpans handle the content
-          updateLetterSpans();
+          layer.textContent = baseText;
+          // Disable cursor and make content uneditable in sequence mode
+          layer.style.cursor = "default";
+          layer.contentEditable = "false";
         } else {
           // For simultaneous mode, ensure we have clean text without spans
-          const text = layer.innerHTML;
-          layer.innerHTML = text.replace(/<span[^>]*>(.*?)<\/span>/g, "$1");
+          layer.textContent = baseText;
+          // Enable cursor and make content editable in normal mode
+          layer.style.cursor = "text";
+          layer.contentEditable = "true";
         }
-
-        // Restore original dimensions
-        layer.style.width = `${layerContents[index].width}px`;
-        layer.style.height = `${layerContents[index].height}px`;
       });
+
+      // If switching to sequential mode, update all layers
+      if (isSequential) {
+        updateLetterSpans();
+      }
     }
   });
 
   // Function to wrap each letter in a span
   function updateLetterSpans() {
+    // First, get the maximum height needed across all layers
+    let maxHeight = 0;
+    const baseText = layers[0].textContent; // Use first layer as base
+
+    // Get the width from the first visible layer
+    const baseLayer = layers.find((layer) => layer.style.opacity !== "0");
+    const baseWidth = baseLayer ? baseLayer.offsetWidth : window.innerWidth;
+
+    // Ensure all layers have the same text content and calculate max height
+    layers.forEach((layer) => {
+      if (layer.style.opacity !== "0") {
+        // First set the text content to ensure proper height calculation
+        layer.textContent = baseText;
+
+        // Create a temporary div to measure the exact height needed
+        const tempDiv = document.createElement("div");
+        tempDiv.style.cssText = window.getComputedStyle(layer).cssText;
+        tempDiv.style.position = "absolute";
+        tempDiv.style.visibility = "hidden";
+        tempDiv.style.width = "100%";
+        tempDiv.style.maxWidth = "100%";
+        tempDiv.style.height = "auto";
+        tempDiv.style.whiteSpace = "pre-wrap";
+        tempDiv.style.wordWrap = "normal";
+        tempDiv.style.overflowWrap = "normal";
+        tempDiv.style.webkitNbspMode = "normal";
+        tempDiv.style.textAlign = "center";
+        tempDiv.style.lineHeight = "1.01";
+        tempDiv.style.fontSize = getComputedStyle(layer).fontSize;
+        tempDiv.style.fontFamily = getComputedStyle(layer).fontFamily;
+        tempDiv.style.padding = getComputedStyle(layer).padding;
+        tempDiv.style.margin = getComputedStyle(layer).margin;
+        tempDiv.textContent = baseText;
+        document.body.appendChild(tempDiv);
+        maxHeight = Math.max(maxHeight, tempDiv.offsetHeight);
+        document.body.removeChild(tempDiv);
+      }
+    });
+
+    // Then update all layers with the same height and content
     layers.forEach((layer) => {
       // Only process visible layers that are in sequential mode
       if (
         layer.classList.contains("sequential") &&
         layer.style.opacity !== "0"
       ) {
-        const text = layer.textContent;
+        const text = baseText; // Use the same base text for all layers
         const weightDuration =
           layer.style.getPropertyValue("--weight-duration") || "3s";
         const widthDuration =
           layer.style.getPropertyValue("--width-duration") || "3s";
         const layerTiming = layer.style.animationTimingFunction;
 
-        // Store current dimensions
-        const width = layer.offsetWidth;
-        const height = layer.offsetHeight;
-
         // Clear the layer content
         layer.innerHTML = "";
 
-        // Split text into lines and process each line
-        const lines = text.split("\n");
-        lines.forEach((line, lineIndex) => {
-          // Create a line container
-          const lineContainer = document.createElement("div");
-          lineContainer.style.display = "block";
-          lineContainer.style.textAlign = "center";
-          lineContainer.style.width = "100%";
+        // Set the layer width to match the container width
+        layer.style.width = "100%";
+        layer.style.maxWidth = "100%";
 
-          // Process each character in the line
-          for (let i = 0; i < line.length; i++) {
+        // Create a single container for all text
+        const textContainer = document.createElement("div");
+        textContainer.style.display = "block";
+        textContainer.style.textAlign = "center";
+        textContainer.style.width = "100%";
+        textContainer.style.maxWidth = "100%";
+        textContainer.style.whiteSpace = "pre-wrap";
+        textContainer.style.wordWrap = "normal";
+        textContainer.style.overflowWrap = "normal";
+        textContainer.style.webkitNbspMode = "normal";
+        textContainer.style.lineHeight = "1.01";
+        textContainer.style.padding = "0";
+        textContainer.style.margin = "0";
+
+        // Process each character in the text, preserving line breaks
+        let charIndex = 0;
+        for (let i = 0; i < text.length; i++) {
+          const char = text[i];
+          if (char === "\n") {
+            // Add a line break
+            textContainer.appendChild(document.createTextNode("\n"));
+          } else {
+            // Add a character span
             const span = document.createElement("span");
-            span.textContent = line[i];
+            span.textContent = char;
+            span.style.display = "inline";
+            span.style.whiteSpace = "pre-wrap";
             span.style.animationDuration = `${weightDuration}, ${widthDuration}`;
-            span.style.animationDelay = `${i * 0.3}s`;
+            span.style.animationDelay = `${charIndex * 0.3}s`;
             span.style.animationTimingFunction = layerTiming;
             span.style.setProperty("--weight-duration", weightDuration);
             span.style.setProperty("--width-duration", widthDuration);
-            lineContainer.appendChild(span);
+            textContainer.appendChild(span);
+            charIndex++;
           }
+        }
 
-          // Add the line container to the layer
-          layer.appendChild(lineContainer);
+        // Add the text container to the layer
+        layer.appendChild(textContainer);
 
-          // Add a line break after each line except the last one
-          if (lineIndex < lines.length - 1) {
-            layer.appendChild(document.createElement("br"));
-          }
-        });
-
-        // Restore original dimensions
-        layer.style.width = `${width}px`;
-        layer.style.height = `${height}px`;
+        // Set the height to accommodate all content
+        layer.style.height = "auto";
+        layer.style.minHeight = `${maxHeight}px`;
+        layer.style.display = "flex";
+        layer.style.flexDirection = "column";
+        layer.style.justifyContent = "center";
+        layer.style.alignItems = "center";
+        layer.style.overflow = "visible"; // Ensure text is not cut off
       }
     });
   }
@@ -608,197 +646,6 @@ document.addEventListener("DOMContentLoaded", () => {
         layer.style.mixBlendMode = isOn ? "normal" : "multiply";
       });
     }
-  });
-
-  // Export functionality
-  const exportButton = document.querySelector(".export-button");
-  const exportOptions = document.querySelector(".export-options");
-
-  exportButton.addEventListener("click", () => {
-    exportOptions.classList.toggle("show");
-  });
-
-  // Close export options when clicking outside
-  document.addEventListener("click", (e) => {
-    if (
-      !e.target.closest(".export-button") &&
-      !e.target.closest(".export-options")
-    ) {
-      exportOptions.classList.remove("show");
-    }
-  });
-
-  // Export as Video
-  document.querySelectorAll(".export-option").forEach((option) => {
-    option.addEventListener("click", async () => {
-      const duration = parseInt(option.dataset.duration) * 1000; // Convert to milliseconds
-      const exportButton = document.querySelector(".export-button");
-
-      // Add loading state
-      exportButton.classList.add("loading");
-      exportOptions.classList.remove("show");
-
-      const canvas = document.createElement("canvas");
-      const ctx = canvas.getContext("2d");
-
-      // Set canvas size based on mode
-      const scale = 2; // Scale factor for higher resolution
-      if (isImageMode) {
-        // In image mode, use the canvas container dimensions
-        canvas.width = canvasContainer.offsetWidth * scale;
-        canvas.height = canvasContainer.offsetHeight * scale;
-      } else {
-        // In normal mode, use window dimensions
-        canvas.width = window.innerWidth * scale;
-        canvas.height = window.innerHeight * scale;
-      }
-
-      // Scale the context to match the higher resolution
-      ctx.scale(scale, scale);
-
-      // Get supported mime type
-      const mimeTypes = ["video/webm;codecs=vp8", "video/webm", "video/mp4"];
-      let selectedMimeType = "";
-      for (const mimeType of mimeTypes) {
-        if (MediaRecorder.isTypeSupported(mimeType)) {
-          selectedMimeType = mimeType;
-          break;
-        }
-      }
-
-      if (!selectedMimeType) {
-        alert("Video recording is not supported in your browser.");
-        exportButton.classList.remove("loading");
-        return;
-      }
-
-      const stream = canvas.captureStream(60); // 60 FPS for smoother animation
-      const mediaRecorder = new MediaRecorder(stream, {
-        mimeType: selectedMimeType,
-        videoBitsPerSecond: 8000000, // 8 Mbps for higher quality
-      });
-      const chunks = [];
-
-      // Start recording
-      mediaRecorder.start();
-
-      const startTime = Date.now();
-
-      async function draw() {
-        // Clear canvas
-        ctx.fillStyle = getComputedStyle(document.body).backgroundColor;
-        ctx.fillRect(0, 0, canvas.width / scale, canvas.height / scale);
-
-        if (isImageMode) {
-          // Draw the image canvas with blur
-          const imageCanvas = document.getElementById("imageCanvas");
-          ctx.drawImage(
-            imageCanvas,
-            0,
-            0,
-            canvas.width / scale,
-            canvas.height / scale
-          );
-        }
-
-        // Draw text layers
-        for (const layer of layers) {
-          // Create a temporary canvas for each layer
-          const layerCanvas = document.createElement("canvas");
-          const layerCtx = layerCanvas.getContext("2d");
-
-          // Set the temporary canvas size to match the layer
-          const rect = layer.getBoundingClientRect();
-          layerCanvas.width = rect.width * scale;
-          layerCanvas.height = rect.height * scale;
-          layerCtx.scale(scale, scale);
-
-          // Draw the layer content
-          const html = layer.innerHTML;
-          const tempDiv = document.createElement("div");
-          tempDiv.innerHTML = html;
-          tempDiv.style.position = "absolute";
-          tempDiv.style.left = "-9999px";
-          tempDiv.style.top = "-9999px";
-          document.body.appendChild(tempDiv);
-
-          // Apply the same styles as the original layer
-          tempDiv.style.fontFamily = getComputedStyle(layer).fontFamily;
-          tempDiv.style.fontSize = getComputedStyle(layer).fontSize;
-          tempDiv.style.color = getComputedStyle(layer).color;
-          tempDiv.style.whiteSpace = "pre-wrap";
-          tempDiv.style.textAlign = "center";
-
-          // Calculate the current animation state
-          const currentTime = (Date.now() - startTime) / 1000;
-          const layerDelay = parseFloat(layer.style.animationDelay) || 0;
-          const layerSpeed = parseFloat(layer.style.animationDuration) || 3;
-          const time = (currentTime - layerDelay) % layerSpeed;
-          const progress = time / layerSpeed;
-          const weight = 101 + 99 * Math.sin(progress * Math.PI);
-
-          // Apply the current animation state
-          tempDiv.style.fontVariationSettings = `"wght" ${weight}`;
-
-          // Convert the HTML to an image
-          const dataUrl = await html2canvas(tempDiv, {
-            scale: scale,
-            backgroundColor: null,
-            logging: false,
-            useCORS: true,
-          }).then((canvas) => canvas.toDataURL());
-
-          // Remove the temporary div
-          document.body.removeChild(tempDiv);
-
-          // Draw the layer image onto the main canvas
-          const img = new Image();
-          img.src = dataUrl;
-          await new Promise((resolve) => {
-            img.onload = () => {
-              // Calculate center position
-              const centerX = canvas.width / scale / 2;
-              const centerY = canvas.height / scale / 2;
-
-              // Draw the layer centered
-              ctx.drawImage(
-                img,
-                centerX - rect.width / 2,
-                centerY - rect.height / 2,
-                rect.width,
-                rect.height
-              );
-              resolve();
-            };
-          });
-        }
-
-        if (Date.now() - startTime < duration) {
-          requestAnimationFrame(draw);
-        } else {
-          mediaRecorder.stop();
-        }
-      }
-
-      draw();
-
-      mediaRecorder.ondataavailable = (e) => chunks.push(e.data);
-      mediaRecorder.onstop = () => {
-        const extension = selectedMimeType.includes("webm") ? "webm" : "mp4";
-        const blob = new Blob(chunks, { type: selectedMimeType });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = `animation.${extension}`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-
-        // Remove loading state
-        exportButton.classList.remove("loading");
-      };
-    });
   });
 
   // Handle layer toggle
@@ -1078,6 +925,25 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
+  // Image handling
+  const imageUploadRow = document.querySelector(".image-upload-row");
+  const imageEffectsRow = document.querySelector(".image-effects-row");
+  const uploadButton = document.querySelector(".upload-button");
+  const imageUpload = document.getElementById("imageUpload");
+  const canvas = document.getElementById("imageCanvas");
+  const canvasContainer = document.querySelector(".canvas-container");
+  const ctx = canvas.getContext("2d");
+  const textContainer = document.querySelector(".text-container");
+  let originalImage = null;
+  let isImageMode = false;
+
+  // Set canvas size
+  canvas.width = 1080;
+  canvas.height = 1080;
+
+  // Initialize canvas container
+  canvasContainer.style.display = "none";
+
   // Function to toggle image mode
   function toggleImageMode() {
     isImageMode = !isImageMode;
@@ -1090,12 +956,9 @@ document.addEventListener("DOMContentLoaded", () => {
       .querySelector(".image-upload-row")
       .classList.toggle("active", isImageMode);
     document
-      .querySelector(".image-pick-colors-row")
-      .classList.toggle("active", isImageMode);
-    document
       .querySelector(".image-blur-row")
       .classList.toggle("active", isImageMode);
-    canvasContainer.classList.toggle("active", isImageMode);
+    canvasContainer.style.display = isImageMode ? "block" : "none";
 
     // Toggle text container size and constraints
     textContainer.classList.toggle("image-mode", isImageMode);
@@ -1121,6 +984,50 @@ document.addEventListener("DOMContentLoaded", () => {
         layer.style.overflow = "hidden";
         layer.style.wordWrap = "break-word";
       });
+
+      // Load default image if none is loaded
+      if (!originalImage) {
+        const defaultImage = new Image();
+        // Only set crossOrigin for remote images
+        if (defaultImage.src.startsWith("http")) {
+          defaultImage.crossOrigin = "anonymous";
+        }
+        defaultImage.onload = () => {
+          originalImage = defaultImage;
+          drawImage();
+        };
+        defaultImage.onerror = (e) => {
+          console.error("Error loading default image:", e);
+          // Create a simple placeholder image if loading fails
+          const tempCanvas = document.createElement("canvas");
+          tempCanvas.width = 800;
+          tempCanvas.height = 600;
+          const tempCtx = tempCanvas.getContext("2d");
+
+          // Draw a gradient background
+          const gradient = tempCtx.createLinearGradient(0, 0, 800, 600);
+          gradient.addColorStop(0, "#ff6b6b");
+          gradient.addColorStop(1, "#4ecdc4");
+          tempCtx.fillStyle = gradient;
+          tempCtx.fillRect(0, 0, 800, 600);
+
+          // Draw some shapes
+          tempCtx.fillStyle = "rgba(255, 255, 255, 0.2)";
+          for (let i = 0; i < 50; i++) {
+            const x = Math.random() * 800;
+            const y = Math.random() * 600;
+            const size = Math.random() * 100 + 50;
+            tempCtx.beginPath();
+            tempCtx.arc(x, y, size, 0, Math.PI * 2);
+            tempCtx.fill();
+          }
+
+          // Convert to data URL and load
+          const dataUrl = tempCanvas.toDataURL("image/png");
+          defaultImage.src = dataUrl;
+        };
+        defaultImage.src = "default.jpg"; // Use default.jpg
+      }
     } else {
       // Reset text container constraints when exiting image mode
       textContainer.style.width = "";
@@ -1139,6 +1046,218 @@ document.addEventListener("DOMContentLoaded", () => {
         layer.style.wordWrap = "";
       });
     }
+  }
+
+  // Draw image with dot rasterization effect
+  function drawImage() {
+    if (!originalImage) {
+      console.log("No image loaded");
+      return;
+    }
+
+    // Clear the canvas
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // Calculate scaled dimensions to fill canvas
+    const scaleX = canvas.width / originalImage.width;
+    const scaleY = canvas.height / originalImage.height;
+    const scale = Math.max(scaleX, scaleY);
+
+    const scaledWidth = originalImage.width * scale;
+    const scaledHeight = originalImage.height * scale;
+
+    // Calculate center position
+    const centerX = (canvas.width - scaledWidth) / 2;
+    const centerY = (canvas.height - scaledHeight) / 2;
+
+    // Apply offset from dragging
+    const x = centerX + imageOffsetX;
+    const y = centerY + imageOffsetY;
+
+    // Get background color from the body
+    const bgColor = getComputedStyle(document.body).backgroundColor;
+    ctx.fillStyle = bgColor;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // Draw the image directly first
+    ctx.drawImage(originalImage, x, y, scaledWidth, scaledHeight);
+
+    // Now apply the halftone effect on top
+    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    const data = imageData.data;
+
+    // Clear the canvas again
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = bgColor;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // Get dot size from slider
+    const dotSizeSlider = document.getElementById("dotSize");
+    const dotSpacing = parseInt(dotSizeSlider.value) * 2; // Convert slider value to spacing
+    const maxDotSize = dotSpacing * 0.8; // Maximum dot size relative to spacing
+    const minDotSize = 1;
+
+    // Draw halftone dots
+    for (let i = 0; i < canvas.width; i += dotSpacing) {
+      for (let j = 0; j < canvas.height; j += dotSpacing) {
+        const idx = (j * canvas.width + i) * 4;
+        const r = data[idx];
+        const g = data[idx + 1];
+        const b = data[idx + 2];
+        const a = data[idx + 3]; // Get alpha value
+        const brightness = (r * 0.299 + g * 0.587 + b * 0.114) / 255;
+
+        const dotSize =
+          minDotSize + (maxDotSize - minDotSize) * (1 - brightness);
+
+        if (dotSize > minDotSize) {
+          // Use the actual color from the image with its original alpha
+          ctx.fillStyle = `rgba(${r}, ${g}, ${b}, ${a / 255})`;
+          ctx.beginPath();
+          ctx.arc(
+            i + dotSpacing / 2,
+            j + dotSpacing / 2,
+            dotSize / 2,
+            0,
+            Math.PI * 2
+          );
+          ctx.fill();
+        }
+      }
+    }
+  }
+
+  let imageOffsetX = 0;
+  let imageOffsetY = 0;
+  let isDragging = false;
+  let lastMouseX = 0;
+  let lastMouseY = 0;
+
+  // Handle mouse events for dragging
+  canvas.addEventListener("mousedown", (e) => {
+    if (!originalImage) return;
+    isDragging = true;
+    lastMouseX = e.clientX;
+    lastMouseY = e.clientY;
+  });
+
+  canvas.addEventListener("mousemove", (e) => {
+    if (!isDragging || !originalImage) return;
+
+    const deltaX = e.clientX - lastMouseX;
+    const deltaY = e.clientY - lastMouseY;
+
+    imageOffsetX += deltaX;
+    imageOffsetY += deltaY;
+
+    lastMouseX = e.clientX;
+    lastMouseY = e.clientY;
+
+    drawImage();
+  });
+
+  canvas.addEventListener("mouseup", () => {
+    isDragging = false;
+  });
+
+  canvas.addEventListener("mouseleave", () => {
+    isDragging = false;
+  });
+
+  // Image mode text size control
+  const imageTextSizeInput = document.getElementById("imageTextSizeInput");
+  if (imageTextSizeInput) {
+    imageTextSizeInput.addEventListener("input", () => {
+      const size = imageTextSizeInput.value;
+      layers.forEach((layer) => {
+        layer.style.fontSize = `${size}px`;
+      });
+    });
+  }
+
+  // Add click handler to the upload button
+  uploadButton.addEventListener("click", () => {
+    console.log("Upload button clicked");
+    imageUpload.click();
+  });
+
+  // Handle image upload
+  imageUpload.addEventListener("change", (e) => {
+    console.log("File input changed");
+    const file = e.target.files[0];
+    if (file) {
+      console.log("File selected:", file.name);
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        console.log("File read complete");
+        const img = new Image();
+        img.onload = () => {
+          console.log("Image loaded:", img.width, "x", img.height);
+          originalImage = img;
+          // Reset image offset
+          imageOffsetX = 0;
+          imageOffsetY = 0;
+          // Draw the image
+          drawImage();
+        };
+        img.onerror = (error) => {
+          console.error("Error loading image:", error);
+        };
+        img.src = event.target.result;
+      };
+      reader.onerror = (error) => {
+        console.error("Error reading file:", error);
+      };
+      reader.readAsDataURL(file);
+    }
+  });
+
+  // Add dot size slider event listener
+  const dotSizeSlider = document.getElementById("dotSize");
+  if (dotSizeSlider) {
+    dotSizeSlider.addEventListener("input", () => {
+      drawImage();
+    });
+  }
+
+  // Function to update layer colors
+  function updateLayerColors() {
+    const layers = [1, 2, 3];
+    layers.forEach((layerNum) => {
+      const color = getRandomColor();
+      const layerElement = document.getElementById(`layer${layerNum}`);
+      const colorDot = document.querySelector(
+        `.color-dot-wrapper[data-layer="${layerNum}"] .color-dot`
+      );
+      const hsbSliders = document.querySelectorAll(
+        `.color-dot-wrapper[data-layer="${layerNum}"] .hsb-slider`
+      );
+
+      // Convert hex to RGB
+      const r = parseInt(color.slice(1, 3), 16);
+      const g = parseInt(color.slice(3, 5), 16);
+      const b = parseInt(color.slice(5, 7), 16);
+
+      // Convert RGB to HSB
+      const hsb = rgbToHsb(r, g, b);
+
+      // Update layer and dot colors
+      layerElement.style.color = color;
+      colorDot.style.background = color;
+
+      // Update HSB sliders
+      hsbSliders[0].value = hsb.h;
+      hsbSliders[1].value = hsb.s;
+      hsbSliders[2].value = hsb.b;
+
+      // Update CSS variables if color animation is active
+      if (document.querySelector(".color-dot").classList.contains("selected")) {
+        document.documentElement.style.setProperty(
+          `--layer-${layerNum}-color`,
+          color
+        );
+      }
+    });
   }
 
   // Function to toggle fullscreen
@@ -1210,249 +1329,5 @@ document.addEventListener("DOMContentLoaded", () => {
     layer.addEventListener("blur", () => {
       isTyping = false;
     });
-  });
-
-  // Function to update layer colors
-  function updateLayerColors() {
-    const layers = [1, 2, 3];
-    layers.forEach((layerNum) => {
-      const color = getRandomColor();
-      const layerElement = document.getElementById(`layer${layerNum}`);
-      const colorDot = document.querySelector(
-        `.color-dot-wrapper[data-layer="${layerNum}"] .color-dot`
-      );
-      const hsbSliders = document.querySelectorAll(
-        `.color-dot-wrapper[data-layer="${layerNum}"] .hsb-slider`
-      );
-
-      // Convert hex to RGB
-      const r = parseInt(color.slice(1, 3), 16);
-      const g = parseInt(color.slice(3, 5), 16);
-      const b = parseInt(color.slice(5, 7), 16);
-
-      // Convert RGB to HSB
-      const hsb = rgbToHsb(r, g, b);
-
-      // Update layer and dot colors
-      layerElement.style.color = color;
-      colorDot.style.background = color;
-
-      // Update HSB sliders
-      hsbSliders[0].value = hsb.h;
-      hsbSliders[1].value = hsb.s;
-      hsbSliders[2].value = hsb.b;
-
-      // Update CSS variables if color animation is active
-      if (document.querySelector(".color-dot").classList.contains("selected")) {
-        document.documentElement.style.setProperty(
-          `--layer-${layerNum}-color`,
-          color
-        );
-      }
-    });
-  }
-
-  // Image handling
-  const imageUploadRow = document.querySelector(".image-upload-row");
-  const imageEffectsRow = document.querySelector(".image-effects-row");
-  const uploadButton = document.querySelector(".upload-button");
-  const imageUpload = document.getElementById("imageUpload");
-  const canvas = document.getElementById("imageCanvas");
-  const canvasContainer = document.querySelector(".canvas-container");
-  const ctx = canvas.getContext("2d");
-  const textContainer = document.querySelector(".text-container");
-  let originalImage = null;
-  let isImageMode = false;
-
-  // Set canvas size
-  canvas.width = 1080;
-  canvas.height = 1080;
-
-  // Draw image with blur effect
-  function drawImage() {
-    if (!originalImage) return;
-
-    // Clear the canvas
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-    // Calculate scaled dimensions to fill canvas with significant extra zoom
-    const scaleX = (canvas.width * 1.5) / originalImage.width; // 50% extra zoom
-    const scaleY = (canvas.height * 1.5) / originalImage.height; // 50% extra zoom
-    const scale = Math.max(scaleX, scaleY);
-
-    const scaledWidth = originalImage.width * scale;
-    const scaledHeight = originalImage.height * scale;
-
-    // Calculate center position
-    const centerX = (canvas.width - scaledWidth) / 2;
-    const centerY = (canvas.height - scaledHeight) / 2;
-
-    // Apply offset from dragging
-    const x = centerX + imageOffsetX;
-    const y = centerY + imageOffsetY;
-
-    // Get blur amount
-    const blurSlider = document.getElementById("blurAmount");
-    const blurAmount = blurSlider ? parseFloat(blurSlider.value) : 0;
-
-    // Apply blur effect using CSS filter
-    canvas.style.filter = `blur(${blurAmount}px)`;
-
-    // Draw image
-    ctx.drawImage(originalImage, x, y, scaledWidth, scaledHeight);
-  }
-
-  // Load default image
-  const defaultImage = new Image();
-  defaultImage.onload = () => {
-    originalImage = defaultImage;
-    drawImage();
-  };
-  defaultImage.src = "KMB_kirchner_alpaufzug_website.webp";
-
-  let imageOffsetX = 0;
-  let imageOffsetY = 0;
-  let isDragging = false;
-  let lastMouseX = 0;
-  let lastMouseY = 0;
-
-  // Handle mouse events for dragging
-  canvas.addEventListener("mousedown", (e) => {
-    if (!originalImage) return;
-    isDragging = true;
-    lastMouseX = e.clientX;
-    lastMouseY = e.clientY;
-  });
-
-  canvas.addEventListener("mousemove", (e) => {
-    if (!isDragging || !originalImage) return;
-
-    const deltaX = e.clientX - lastMouseX;
-    const deltaY = e.clientY - lastMouseY;
-
-    imageOffsetX += deltaX;
-    imageOffsetY += deltaY;
-
-    lastMouseX = e.clientX;
-    lastMouseY = e.clientY;
-
-    drawImage();
-  });
-
-  canvas.addEventListener("mouseup", () => {
-    isDragging = false;
-  });
-
-  canvas.addEventListener("mouseleave", () => {
-    isDragging = false;
-  });
-
-  // Image mode text size control
-  const imageTextSizeInput = document.getElementById("imageTextSizeInput");
-  if (imageTextSizeInput) {
-    imageTextSizeInput.addEventListener("input", () => {
-      const size = imageTextSizeInput.value;
-      layers.forEach((layer) => {
-        layer.style.fontSize = `${size}px`;
-      });
-    });
-  }
-
-  // Handle image upload
-  imageUpload.addEventListener("change", (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        const img = new Image();
-        img.onload = () => {
-          originalImage = img;
-          drawImage();
-        };
-        img.src = event.target.result;
-      };
-      reader.readAsDataURL(file);
-    }
-  });
-
-  // Add blur amount slider event listener
-  const blurSlider = document.getElementById("blurAmount");
-  if (blurSlider) {
-    blurSlider.addEventListener("input", () => {
-      drawImage();
-    });
-  }
-
-  // Function to get random color from image
-  function getRandomColorFromImage() {
-    if (!originalImage) return null;
-
-    const tempCanvas = document.createElement("canvas");
-    const tempCtx = tempCanvas.getContext("2d");
-
-    // Scale image to fill canvas
-    const scaleX = canvas.width / originalImage.width;
-    const scaleY = canvas.height / originalImage.height;
-    const scale = Math.max(scaleX, scaleY);
-    const width = originalImage.width * scale;
-    const height = originalImage.height * scale;
-    const offsetX = (canvas.width - width) / 2 + imageOffsetX;
-    const offsetY = (canvas.height - height) / 2 + imageOffsetY;
-
-    tempCanvas.width = width;
-    tempCanvas.height = height;
-    tempCtx.drawImage(originalImage, 0, 0, width, height);
-
-    // Get random coordinates within the visible image area
-    const x = Math.floor(Math.random() * width);
-    const y = Math.floor(Math.random() * height);
-
-    // Get color at coordinates
-    const imageData = tempCtx.getImageData(x, y, 1, 1);
-    const data = imageData.data;
-    return `rgb(${data[0]}, ${data[1]}, ${data[2]})`;
-  }
-
-  // Add click handler for Pick Colors button
-  document
-    .querySelector(".pick-colors-button")
-    .addEventListener("click", () => {
-      if (!originalImage) return;
-
-      // Get three random colors from the image
-      const colors = Array(3)
-        .fill()
-        .map(() => getRandomColorFromImage());
-
-      // Update layer colors
-      colors.forEach((color, index) => {
-        const layerNum = index + 1;
-        const layerElement = document.getElementById(`layer${layerNum}`);
-        const colorDot = document.querySelector(
-          `.color-dot-wrapper[data-layer="${layerNum}"] .color-dot`
-        );
-        const colorPicker = document.querySelector(
-          `.color-dot-wrapper[data-layer="${layerNum}"] .color-picker`
-        );
-
-        layerElement.style.color = color;
-        colorDot.style.background = color;
-        colorPicker.value = rgbToHex(color);
-
-        // Update CSS variables if color animation is active
-        if (
-          document.querySelector(".color-dot").classList.contains("selected")
-        ) {
-          document.documentElement.style.setProperty(
-            `--layer-${layerNum}-color`,
-            color
-          );
-        }
-      });
-    });
-
-  // Upload button click
-  uploadButton.addEventListener("click", () => {
-    imageUpload.click();
   });
 });

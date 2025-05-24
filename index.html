@@ -183,8 +183,8 @@
             </div>
             <div class="control-row image-blur-row">
                 <div class="blur-control">
-                    <label>Blur</label>
-                    <input type="range" min="0" max="20" step="1" value="0" id="blurAmount">
+                    <label>Dots</label>
+                    <input type="range" min="1" max="20" step="1" value="5" id="dotSize">
                 </div>
             </div>
         </div>
@@ -195,16 +195,9 @@
     </div>
 
     <div class="text-container">
-        <div class="text-layer layer-1 simultaneous" id="layer1" contenteditable="true" spellcheck="false">Hey, can you type something?</div>
-        <div class="text-layer layer-2 simultaneous" id="layer2" contenteditable="true" spellcheck="false">Hey, can you type something?</div>
-        <div class="text-layer layer-3 simultaneous" id="layer3" contenteditable="true" spellcheck="false">Hey, can you type something?</div>
-    </div>
-
-    <button class="export-button"><span>E</span><span>X</span><span>P</span><span>O</span><span>R</span><span>T</span></button>
-    <div class="export-options">
-        <button class="export-option" data-duration="3">3 SECONDS</button>
-        <button class="export-option" data-duration="5">5 SECONDS</button>
-        <button class="export-option" data-duration="10">10 SECONDS</button>
+        <div class="text-layer layer-1 simultaneous" id="layer1" contenteditable="true" spellcheck="false">Hey, can&#10;you type something?</div>
+        <div class="text-layer layer-2 simultaneous" id="layer2" contenteditable="true" spellcheck="false">Hey, can&#10;you type something?</div>
+        <div class="text-layer layer-3 simultaneous" id="layer3" contenteditable="true" spellcheck="false">Hey, can&#10;you type something?</div>
     </div>
 
     <script src="main.js"></script>
