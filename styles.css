@@ -53,6 +53,23 @@ body {
     pointer-events: none;
 }
 
+/* Add new styles for fullscreen mode */
+body:fullscreen .controls,
+body:-webkit-full-screen .controls {
+    transform: translateX(-50%) translateY(-100%);
+    opacity: 0;
+    pointer-events: none;
+    transition: transform 0.3s ease, opacity 0.3s ease;
+}
+
+/* Add transition for entering/exiting fullscreen */
+body:fullscreen .controls,
+body:-webkit-full-screen .controls,
+body:fullscreen .controls.hidden,
+body:-webkit-full-screen .controls.hidden {
+    transition: transform 0.3s ease, opacity 0.3s ease;
+}
+
 .control-group {
     display: flex;
     flex-direction: column;
@@ -1011,13 +1028,13 @@ body:has(.text-container.image-mode) .color-slider input[type="range"]::-webkit-
 .image-controls.active {
     display: flex;
     flex-direction: column;
-    gap: 24px;
+    gap: 12px;
 }
 
 .image-controls .image-control-group {
     display: flex;
     flex-direction: column;
-    gap: 14px;
+    gap: 25px;
     width: 100%;
 }
 
@@ -1030,16 +1047,14 @@ body:has(.text-container.image-mode) .color-slider input[type="range"]::-webkit-
     display: none;
 }
 
-.image-upload-row,
-.image-pick-colors-row,
-.image-blur-row,
-.image-dot-size-row {
+.image-upload-row {
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 12px;
     opacity: 1;
-    visibility: vsible;
+    visibility: visible;
     transition: all 0.3s ease;
+    height: auto;
 }
 
 .image-upload-row.active,
@@ -1050,8 +1065,7 @@ body:has(.text-container.image-mode) .color-slider input[type="range"]::-webkit-
     visibility: visible;
 }
 
-.upload-button,
-.pick-colors-button {
+.upload-button {
     width: 100%;
     background: none;
     border: 1px solid rgba(255, 255, 255, 0.2);
@@ -1064,6 +1078,7 @@ body:has(.text-container.image-mode) .color-slider input[type="range"]::-webkit-
     transition: all 0.3s ease;
     text-align: center;
     text-transform: uppercase;
+    height: auto;
 }
 
 .upload-button:hover,
@@ -1212,14 +1227,13 @@ body:has(.text-container.image-mode) .color-slider input[type="range"]::-webkit-
     padding: 12px;
     background: rgba(42, 42, 42, 0.85);
     border-radius: 8px;
-    margin-top: 12px;
+    margin-top: 0;
 }
 
 .text-alignment-control {
     display: flex;
     align-items: center;
     gap: 12px;
-    margin-bottom: 12px;
 }
 
 .text-alignment-control label {
@@ -1231,6 +1245,7 @@ body:has(.text-container.image-mode) .color-slider input[type="range"]::-webkit-
 
 .alignment-dots {
     display: flex;
+    margin-left: auto;
     gap: 8px;
 }
 
@@ -1406,12 +1421,12 @@ body:has(.text-container.image-mode) .controls.hidden {
 .image-position-controls {
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 12px;
     width: 176px;
     padding: 12px;
     background: rgba(42, 42, 42, 0.85);
     border-radius: 8px;
-    margin-top: 12px;
+    margin-top: 0;
 }
 
 .image-position-control {
@@ -1464,11 +1479,12 @@ body:has(.text-container.image-mode) .controls.hidden {
 .image-pattern-row {
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 12px;
     opacity: 1;
     visibility: visible;
     transition: all 0.3s ease;
 }
+
 
 .image-pattern-row.active {
     opacity: 1;
@@ -1512,6 +1528,9 @@ body:has(.text-container.image-mode) .controls.hidden {
     font-family: 'G2ErikaMono', monospace;
 }
 
+
+
+
 .pattern-dot:hover {
     transform: scale(1.1);
     background: #666;
@@ -1527,12 +1546,11 @@ body:has(.text-container.image-mode) .controls.hidden {
 .rasterization-controls {
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 12px;
     width: 176px;
     padding: 12px;
     background: rgba(42, 42, 42, 0.85);
     border-radius: 8px;
-    margin-top: 12px;
     opacity: 0;
     visibility: hidden;
     transition: all 0.3s ease;

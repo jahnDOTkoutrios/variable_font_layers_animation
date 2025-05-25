@@ -179,6 +179,16 @@
                 <button class="upload-button">Upload Image</button>
             </div>
             <div class="rasterization-controls">
+                <div class="control-row image-pattern-row">
+                    <div class="pattern-control">
+                        <label>Pattern</label>
+                        <div class="pattern-dots">
+                            <div class="pattern-dot selected" data-pattern="dots">•</div>
+                            <div class="pattern-dot" "pattern-square" data-pattern="squares">◻</div>
+                            <div class="pattern-dot" data-pattern="lines">|</div>
+                        </div>
+                    </div>
+                </div>
                 <div class="control-row image-blur-row">
                     <div class="blur-control">
                         <label>RES</label>
@@ -189,16 +199,6 @@
                     <div class="blur-control">
                         <label>Size</label>
                         <input type="range" id="dotSize" min="1" max="300" value="80">
-                    </div>
-                </div>
-                <div class="control-row image-pattern-row">
-                    <div class="pattern-control">
-                        <label>Pattern</label>
-                        <div class="pattern-dots">
-                            <div class="pattern-dot selected" data-pattern="dots">•</div>
-                            <div class="pattern-dot" data-pattern="squares">□</div>
-                            <div class="pattern-dot" data-pattern="lines">|</div>
-                        </div>
                     </div>
                 </div>
             </div>

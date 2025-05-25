@@ -55,10 +55,32 @@ document.addEventListener("DOMContentLoaded", () => {
     document.getElementById("layer3"),
   ];
 
-  // Set initial colors
+  // Randomize initial colors
   layers.forEach((layer, index) => {
-    const colors = ["#0b2279", "#8397eb", "#3d4a42"];
-    layer.style.color = colors[index];
+    const color = getRandomColor();
+    layer.style.color = color;
+
+    // Update the color dot
+    const colorDot = document.querySelector(
+      `.color-dot-wrapper[data-layer="${index + 1}"] .color-dot`
+    );
+    if (colorDot) {
+      colorDot.style.background = color;
+
+      // Update HSB sliders
+      const hsbSliders = document.querySelectorAll(
+        `.color-dot-wrapper[data-layer="${index + 1}"] .hsb-slider`
+      );
+      if (hsbSliders.length === 3) {
+        const r = parseInt(color.slice(1, 3), 16);
+        const g = parseInt(color.slice(3, 5), 16);
+        const b = parseInt(color.slice(5, 7), 16);
+        const hsb = rgbToHsb(r, g, b);
+        hsbSliders[0].value = hsb.h;
+        hsbSliders[1].value = hsb.s;
+        hsbSliders[2].value = hsb.b;
+      }
+    }
   });
 
   // Set initial layer states and animation values
@@ -1050,7 +1072,7 @@ document.addEventListener("DOMContentLoaded", () => {
           const dataUrl = tempCanvas.toDataURL("image/png");
           defaultImage.src = dataUrl;
         };
-        defaultImage.src = "default.jpg"; // Use default.jpg
+        defaultImage.src = "bouncy-castle.jpg.webp"; // Use bouncy-castle.jpg.webp
       }
     } else {
       // Reset text container constraints when exiting image mode
@@ -1501,4 +1523,12 @@ document.addEventListener("DOMContentLoaded", () => {
       drawImage();
     });
   });
+
+  // Load default image after all handlers are defined
+  const defaultImage = new Image();
+  defaultImage.src = "bouncy-castle.jpg.webp";
+  defaultImage.onload = function () {
+    originalImage = defaultImage;
+    drawImage();
+  };
 });
