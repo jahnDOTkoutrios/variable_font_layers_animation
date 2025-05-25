@@ -1162,7 +1162,7 @@ body:has(.text-container.image-mode) .color-slider input[type="range"]::-webkit-
     background: #fff;
     border-radius: 12px;
     overflow-x: hidden;
-    overflow-y: visible;
+    overflow-y: hidden;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
