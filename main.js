@@ -983,6 +983,18 @@ document.addEventListener("DOMContentLoaded", () => {
   // Initialize canvas container
   canvasContainer.style.display = "none";
 
+  // Add variables to store image mode settings
+  let savedImageSettings = {
+    zoom: 100,
+    positionX: 0,
+    positionY: 0,
+    dotResolution: 10,
+    dotSize: 80,
+    pattern: "dots",
+    imageOffsetX: 0,
+    imageOffsetY: 0,
+  };
+
   // Function to toggle image mode
   function toggleImageMode() {
     isImageMode = !isImageMode;
@@ -1031,10 +1043,33 @@ document.addEventListener("DOMContentLoaded", () => {
         layer.style.wordWrap = "break-word";
       });
 
+      // Restore saved settings
+      imageZoom = savedImageSettings.zoom;
+      imageOffsetX = savedImageSettings.imageOffsetX;
+      imageOffsetY = savedImageSettings.imageOffsetY;
+
+      // Update UI controls with saved values
+      document.getElementById("imageZoom").value = savedImageSettings.zoom;
+      document.getElementById("imagePositionX").value =
+        savedImageSettings.positionX;
+      document.getElementById("imagePositionY").value =
+        savedImageSettings.positionY;
+      document.getElementById("dotResolution").value =
+        savedImageSettings.dotResolution;
+      document.getElementById("dotSize").value = savedImageSettings.dotSize;
+
+      // Restore pattern selection
+      document.querySelectorAll(".pattern-dot").forEach((dot) => {
+        dot.classList.toggle(
+          "selected",
+          dot.dataset.pattern === savedImageSettings.pattern
+        );
+      });
+      currentPattern = savedImageSettings.pattern;
+
       // Load default image if none is loaded
       if (!originalImage) {
         const defaultImage = new Image();
-        // Only set crossOrigin for remote images
         if (defaultImage.src.startsWith("http")) {
           defaultImage.crossOrigin = "anonymous";
         }
@@ -1044,20 +1079,15 @@ document.addEventListener("DOMContentLoaded", () => {
         };
         defaultImage.onerror = (e) => {
           console.error("Error loading default image:", e);
-          // Create a simple placeholder image if loading fails
           const tempCanvas = document.createElement("canvas");
           tempCanvas.width = 800;
           tempCanvas.height = 600;
           const tempCtx = tempCanvas.getContext("2d");
-
-          // Draw a gradient background
           const gradient = tempCtx.createLinearGradient(0, 0, 800, 600);
           gradient.addColorStop(0, "#ff6b6b");
           gradient.addColorStop(1, "#4ecdc4");
           tempCtx.fillStyle = gradient;
           tempCtx.fillRect(0, 0, 800, 600);
-
-          // Draw some shapes
           tempCtx.fillStyle = "rgba(255, 255, 255, 0.2)";
           for (let i = 0; i < 50; i++) {
             const x = Math.random() * 800;
@@ -1067,14 +1097,26 @@ document.addEventListener("DOMContentLoaded", () => {
             tempCtx.arc(x, y, size, 0, Math.PI * 2);
             tempCtx.fill();
           }
-
-          // Convert to data URL and load
           const dataUrl = tempCanvas.toDataURL("image/png");
           defaultImage.src = dataUrl;
         };
-        defaultImage.src = "bouncy-castle.jpg.webp"; // Use bouncy-castle.jpg.webp
+        defaultImage.src = "bouncy-castle.jpg.webp";
+      } else {
+        drawImage();
       }
     } else {
+      // Save current settings before exiting image mode
+      savedImageSettings = {
+        zoom: imageZoom,
+        positionX: parseInt(document.getElementById("imagePositionX").value),
+        positionY: parseInt(document.getElementById("imagePositionY").value),
+        dotResolution: parseInt(document.getElementById("dotResolution").value),
+        dotSize: parseInt(document.getElementById("dotSize").value),
+        pattern: currentPattern,
+        imageOffsetX: imageOffsetX,
+        imageOffsetY: imageOffsetY,
+      };
+
       // Reset text container constraints when exiting image mode
       textContainer.style.width = "";
       textContainer.style.height = "";
