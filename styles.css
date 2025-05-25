@@ -44,7 +44,7 @@ body {
     user-select: none;
     -webkit-user-select: none;
     border: 1px solid rgba(255, 255, 255, 0.1);
-    transition: transform 0.3s ease, opacity 0.3s ease;
+    transition: none;
 }
 
 .controls.hidden {
@@ -120,7 +120,7 @@ input[type="range"] {
     background: #404040;
     border-radius: 2px;
     outline: none;
-    transition: all 0.3s ease;
+    transition: none;
     margin: 0;
 }
 
@@ -131,7 +131,7 @@ input[type="range"]::-webkit-slider-thumb {
     background: #FFFFFF;
     border-radius: 50%;
     cursor: pointer;
-    transition: all 0.3s ease;
+    transition: none;
     border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
@@ -187,14 +187,72 @@ input[type="text"] {
 }
 
 .text-container.image-mode {
-    width: min(60vh, 1080px);
-    height: min(60vh, 1080px);
+    width: min(80vh, 1080px);
+    height: min(80vh, 1080px);
     margin: auto;
     position: relative;
     z-index: 2;
-    transform: none !important;
-    overflow: hidden;
+    overflow-x: hidden;
+    overflow-y: visible;
     padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    user-select: none;
+    -webkit-user-select: none;
+}
+
+.text-container.image-mode .text-layer {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 100%;
+    height: 100%;
+    transform: translate(-50%, -50%);
+    overflow-x: hidden;
+    overflow-y: visible;
+    padding: 0;
+    margin: 0;
+    box-sizing: border-box;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    user-select: none;
+    -webkit-user-select: none;
+    cursor: default;
+}
+
+.text-container.image-mode .text-layer div {
+    width: 100%;
+    height: 100%;
+    overflow-x: hidden;
+    overflow-y: visible;
+    padding: 0;
+    margin: 0;
+    box-sizing: border-box;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.text-container.image-mode .text-layer span {
+    display: inline-block;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    box-sizing: border-box;
+    line-height: 1.01;
+}
+
+/* Ensure text stays within bounds when using transform */
+.text-container.image-mode .text-layer[style*="transform"] {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    transform-origin: center center;
 }
 
 .controls.hidden ~ .text-container {
@@ -244,11 +302,6 @@ input[type="text"] {
     display: flex;
     justify-content: center;
     align-items: center;
-}
-
-.text-container.image-mode .text-layer {
-    max-width: 100%;
-    transform: translate(-50%, -25%);
 }
 
 .text-layer::selection {
@@ -422,20 +475,20 @@ input[type="text"] {
 
 .color-picker-container {
     position: absolute;
-    top: calc(100% + 32px);
+    top: calc(100% + 26px);
     left: 50%;
     transform: translateX(-50%);
     margin-top: 0;
     background: rgba(42, 42, 42, 0.85);
-    padding: 16px;
-    border-radius: 12px;
+    padding: 12px;
+    border-radius: 8px;
     backdrop-filter: blur(20px) saturate(180%);
     -webkit-backdrop-filter: blur(20px) saturate(180%);
     border: 1px solid rgba(255, 255, 255, 0.1);
     opacity: 0;
     visibility: hidden;
     z-index: 1000;
-    width: 200px;
+    width: 180px;
 }
 
 .color-picker-container.active {
@@ -446,19 +499,19 @@ input[type="text"] {
 .color-picker-controls {
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: 8px;
 }
 
 .color-slider {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 6px;
 }
 
 .color-slider label {
-    width: 20px;
+    width: 16px;
     color: #999;
-    font-size: 12px;
+    font-size: 11px;
     text-transform: uppercase;
 }
 
@@ -469,24 +522,41 @@ input[type="text"] {
     background: #404040;
     border-radius: 2px;
     outline: none;
-    transition: all 0.3s ease;
+    transition: none;
     margin: 0;
 }
 
-.color-slider input[type="range"]::-webkit-slider-thumb {
-    -webkit-appearance: none;
-    width: 14px;
-    height: 14px;
-    background: #FFFFFF;
-    border-radius: 50%;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    border: 1px solid rgba(255, 255, 255, 0.2);
+/* Image mode specific color picker styles */
+body:has(.text-container.image-mode) .color-picker-container {
+    width: 160px;
+    padding: 10px;
+    top: auto;
+    left: auto;
+    right: calc(100% + 6px);
+    bottom: 6px;
+    transform: none;
 }
 
-.color-slider input[type="range"]::-webkit-slider-thumb:hover {
-    transform: scale(1.2);
-    background: #FFFFFF;
+body:has(.text-container.image-mode) .color-picker-controls {
+    gap: 6px;
+}
+
+body:has(.text-container.image-mode) .color-slider {
+    gap: 4px;
+}
+
+body:has(.text-container.image-mode) .color-slider label {
+    width: 14px;
+    font-size: 10px;
+}
+
+body:has(.text-container.image-mode) .color-slider input[type="range"] {
+    height: 3px;
+}
+
+body:has(.text-container.image-mode) .color-slider input[type="range"]::-webkit-slider-thumb {
+    width: 12px;
+    height: 12px;
 }
 
 .color-slider input[type="text"] {
@@ -910,6 +980,32 @@ input[type="text"] {
     transition: all 0.3s ease;
     width: 200px;
     display: none;
+    user-select: none;
+    -webkit-user-select: none;
+}
+
+.image-controls * {
+    user-select: none;
+    -webkit-user-select: none;
+}
+
+.image-controls input[type="range"] {
+    user-select: none;
+    -webkit-user-select: none;
+    cursor: pointer;
+}
+
+.image-controls button {
+    user-select: none;
+    -webkit-user-select: none;
+    cursor: pointer;
+}
+
+.image-controls .pattern-dot,
+.image-controls .alignment-dot {
+    user-select: none;
+    -webkit-user-select: none;
+    cursor: pointer;
 }
 
 .image-controls.active {
@@ -936,18 +1032,20 @@ input[type="text"] {
 
 .image-upload-row,
 .image-pick-colors-row,
-.image-blur-row {
+.image-blur-row,
+.image-dot-size-row {
     display: flex;
     flex-direction: column;
     gap: 10px;
-    opacity: 0;
-    visibility: hidden;
+    opacity: 1;
+    visibility: vsible;
     transition: all 0.3s ease;
 }
 
 .image-upload-row.active,
 .image-pick-colors-row.active,
-.image-blur-row.active {
+.image-blur-row.active,
+.image-dot-size-row.active {
     opacity: 1;
     visibility: visible;
 }
@@ -1039,16 +1137,17 @@ input[type="text"] {
 
 .canvas-container {
     position: fixed;
-    top: 58%;
+    top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    width: min(76vh, 1080px);
-    height: min(76vh, 1080px);
+    width: min(80vh, 1080px);
+    height: min(80vh, 1080px);
     display: none;
     z-index: 1;
     background: #fff;
     border-radius: 12px;
-    overflow: hidden;
+    overflow-x: hidden;
+    overflow-y: visible;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
@@ -1069,6 +1168,12 @@ input[type="text"] {
     margin: auto;
     position: relative;
     z-index: 2;
+    overflow-x: hidden;
+    overflow-y: visible;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .image-dot,
@@ -1098,4 +1203,379 @@ input[type="text"] {
 /* Remove zoom input styles */
 #zoomInput {
     display: none;
+}
+
+.text-position-row {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 12px;
+    background: rgba(42, 42, 42, 0.85);
+    border-radius: 8px;
+    margin-top: 12px;
+}
+
+.text-alignment-control {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 12px;
+}
+
+.text-alignment-control label {
+    width: 40px;
+    color: #999;
+    text-transform: uppercase;
+    font-size: 12px;
+}
+
+.alignment-dots {
+    display: flex;
+    gap: 8px;
+}
+
+.alignment-dot {
+    width: 24px;
+    height: 24px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    background: #404040;
+    color: #999;
+    font-size: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'G2ErikaMono', monospace;
+}
+
+.alignment-dot:hover {
+    transform: scale(1.1);
+    background: #666;
+    color: #fff;
+}
+
+.alignment-dot.selected {
+    border: 1px solid #fff;
+    background: #fff;
+    color: #222;
+}
+
+.text-offset-controls {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    width: 100%;
+}
+
+.text-offset-control {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+}
+
+.text-offset-control label {
+    width: 20px;
+    color: #999;
+    text-transform: uppercase;
+    font-size: 12px;
+    flex-shrink: 0;
+}
+
+.text-offset-control input[type="range"] {
+    flex-grow: 1;
+    height: 4px;
+    -webkit-appearance: none;
+    background: #404040;
+    border-radius: 2px;
+    outline: none;
+    transition: none;
+    margin: 0;
+    width: 100%;
+}
+
+.text-offset-control input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 14px;
+    height: 14px;
+    background: #FFFFFF;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.text-offset-control input[type="range"]::-webkit-slider-thumb:hover {
+    transform: scale(1.2);
+    background: #FFFFFF;
+}
+
+/* Add new styles for image mode controls */
+.text-container.image-mode ~ .controls {
+    top: 50%;
+    left: auto;
+    right: 20px;
+    transform: translateY(-50%);
+    flex-direction: column;
+    gap: 40px;
+    padding: 32px 24px;
+    max-height: 90vh;
+    overflow-y: auto;
+}
+
+.text-container.image-mode ~ .controls .control-group {
+    width: 200px;
+}
+
+.text-container.image-mode ~ .controls .control-row {
+    width: 100%;
+    justify-content: space-between;
+}
+
+.text-container.image-mode ~ .controls .mode-selector,
+.text-container.image-mode ~ .controls .curve-selector,
+.text-container.image-mode ~ .controls .multiply-toggle,
+.text-container.image-mode ~ .controls .color-toggle,
+.text-container.image-mode ~ .controls .shadow-toggle,
+.text-container.image-mode ~ .controls .bg-toggle {
+    width: 100%;
+    justify-content: space-between;
+}
+
+.text-container.image-mode ~ .controls input[type="range"] {
+    width: 100%;
+}
+
+/* Hide controls when image controls are active */
+.text-container.image-mode ~ .controls.hidden {
+    transform: translateY(-50%) translateX(100%);
+    opacity: 0;
+    pointer-events: none;
+}
+
+/* Image mode controls */
+body:has(.text-container.image-mode) .controls {
+    top: 20px;
+    left: auto;
+    right: 20px;
+    transform: none;
+    flex-direction: column;
+    gap: 16px;
+    padding: 24px;
+    max-height: 90vh;
+    overflow-y: auto;
+    width: 208px;
+    transition: none;
+}
+
+body:has(.text-container.image-mode) .controls .control-group {
+    width: 100%;
+}
+
+body:has(.text-container.image-mode) .controls .control-row {
+    width: 100%;
+    justify-content: space-between;
+    margin-bottom: 0;
+    height: auto;
+}
+
+body:has(.text-container.image-mode) .controls .mode-selector,
+body:has(.text-container.image-mode) .controls .curve-selector,
+body:has(.text-container.image-mode) .controls .multiply-toggle,
+body:has(.text-container.image-mode) .controls .color-toggle,
+body:has(.text-container.image-mode) .controls .shadow-toggle,
+body:has(.text-container.image-mode) .controls .bg-toggle {
+    width: 100%;
+    justify-content: space-between;
+}
+
+body:has(.text-container.image-mode) .controls input[type="range"] {
+    width: 100%;
+}
+
+/* Hide controls when image controls are active */
+body:has(.text-container.image-mode) .controls.hidden {
+    transform: translateX(100%);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+}
+
+.image-position-controls {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    width: 176px;
+    padding: 12px;
+    background: rgba(42, 42, 42, 0.85);
+    border-radius: 8px;
+    margin-top: 12px;
+}
+
+.image-position-control {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+}
+
+.image-position-control label {
+    width: 20px;
+    color: #999;
+    text-transform: uppercase;
+    font-size: 12px;
+    flex-shrink: 0;
+}
+
+.image-position-control input[type="range"] {
+    flex-grow: 1;
+    height: 4px;
+    -webkit-appearance: none;
+    background: #404040;
+    border-radius: 2px;
+    outline: none;
+    transition: none;
+    margin: 0;
+    width: 100%;
+}
+
+.image-position-control input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 12px;
+    height: 12px;
+    background: #fff;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: none;
+}
+
+.image-position-control input[type="range"]::-moz-range-thumb {
+    width: 12px;
+    height: 12px;
+    background: #fff;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: none;
+    border: none;
+}
+
+.image-pattern-row {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    opacity: 1;
+    visibility: visible;
+    transition: all 0.3s ease;
+}
+
+.image-pattern-row.active {
+    opacity: 1;
+    visibility: visible;
+}
+
+.pattern-control {
+    width: 100%;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 12px;
+}
+
+.pattern-control label {
+    width: 40px;
+    color: #999;
+    text-transform: uppercase;
+    font-size: 12px;
+    flex-shrink: 0;
+}
+
+.pattern-dots {
+    display: flex;
+    gap: 8px;
+}
+
+.pattern-dot {
+    width: 24px;
+    height: 24px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    background: #404040;
+    color: #999;
+    font-size: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'G2ErikaMono', monospace;
+}
+
+.pattern-dot:hover {
+    transform: scale(1.1);
+    background: #666;
+    color: #fff;
+}
+
+.pattern-dot.selected {
+    border: 1px solid #fff;
+    background: #fff;
+    color: #222;
+}
+
+.rasterization-controls {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    width: 176px;
+    padding: 12px;
+    background: rgba(42, 42, 42, 0.85);
+    border-radius: 8px;
+    margin-top: 12px;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s ease;
+}
+
+.rasterization-controls.active {
+    opacity: 1;
+    visibility: visible;
+}
+
+.rasterization-controls .control-row {
+    margin: 0;
+    height: auto;
+}
+
+.rasterization-controls .blur-control,
+.rasterization-controls .pattern-control {
+    width: 100%;
+    margin: 0;
+}
+
+.rasterization-controls label {
+    width: 40px;
+    color: #999;
+    text-transform: uppercase;
+    font-size: 12px;
+    flex-shrink: 0;
+}
+
+.rasterization-controls input[type="range"] {
+    flex-grow: 1;
+    height: 4px;
+    -webkit-appearance: none;
+    background: #404040;
+    border-radius: 2px;
+    outline: none;
+    transition: none;
+    margin: 0;
+    width: 100%;
+}
+
+.rasterization-controls .pattern-dots {
+    display: flex;
+    gap: 8px;
+    margin-left: auto;
 }

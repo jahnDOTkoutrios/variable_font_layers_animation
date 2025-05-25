@@ -178,13 +178,64 @@
                 <input type="file" id="imageUpload" accept="image/*" style="display: none;">
                 <button class="upload-button">Upload Image</button>
             </div>
-            <div class="control-row image-pick-colors-row">
-                <button class="pick-colors-button">Pick Colors</button>
+            <div class="rasterization-controls">
+                <div class="control-row image-blur-row">
+                    <div class="blur-control">
+                        <label>RES</label>
+                        <input type="range" id="dotResolution" min="1" max="20" value="10">
+                    </div>
+                </div>
+                <div class="control-row image-dot-size-row">
+                    <div class="blur-control">
+                        <label>Size</label>
+                        <input type="range" id="dotSize" min="1" max="300" value="80">
+                    </div>
+                </div>
+                <div class="control-row image-pattern-row">
+                    <div class="pattern-control">
+                        <label>Pattern</label>
+                        <div class="pattern-dots">
+                            <div class="pattern-dot selected" data-pattern="dots">•</div>
+                            <div class="pattern-dot" data-pattern="squares">□</div>
+                            <div class="pattern-dot" data-pattern="lines">|</div>
+                        </div>
+                    </div>
+                </div>
             </div>
-            <div class="control-row image-blur-row">
-                <div class="blur-control">
-                    <label>Dots</label>
-                    <input type="range" min="1" max="20" step="1" value="5" id="dotSize">
+            <div class="image-effects-row">
+                <div class="image-position-controls">
+                    <div class="image-position-control">
+                        <label>Zoom</label>
+                        <input type="range" id="imageZoom" min="50" max="200" value="100">
+                    </div>
+                    <div class="image-position-control">
+                        <label>X</label>
+                        <input type="range" id="imagePositionX" min="-500" max="500" value="0">
+                    </div>
+                    <div class="image-position-control">
+                        <label>Y</label>
+                        <input type="range" id="imagePositionY" min="-500" max="500" value="0">
+                    </div>
+                </div>
+            </div>
+            <div class="text-position-row">
+                <div class="text-alignment-control">
+                    <label>Align</label>
+                    <div class="alignment-dots">
+                        <div class="alignment-dot" data-align="left">L</div>
+                        <div class="alignment-dot selected" data-align="center">C</div>
+                        <div class="alignment-dot" data-align="right">R</div>
+                    </div>
+                </div>
+                <div class="text-offset-controls">
+                    <div class="text-offset-control">
+                        <label>X</label>
+                        <input type="range" id="textOffsetX" min="-100" max="100" value="0">
+                    </div>
+                    <div class="text-offset-control">
+                        <label>Y</label>
+                        <input type="range" id="textOffsetY" min="-300" max="300" value="0">
+                    </div>
                 </div>
             </div>
         </div>

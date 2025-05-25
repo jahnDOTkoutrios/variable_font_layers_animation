@@ -483,12 +483,22 @@ document.addEventListener("DOMContentLoaded", () => {
           // Disable cursor and make content uneditable in sequence mode
           layer.style.cursor = "default";
           layer.contentEditable = "false";
+          // Remove any existing selection
+          window.getSelection().removeAllRanges();
+          // Preserve text alignment
+          const currentAlignment = layer.style.textAlign || "center";
+          layer.style.textAlign = currentAlignment;
         } else {
           // For simultaneous mode, ensure we have clean text without spans
           layer.textContent = baseText;
           // Enable cursor and make content editable in normal mode
           layer.style.cursor = "text";
           layer.contentEditable = "true";
+          // Remove any existing selection
+          window.getSelection().removeAllRanges();
+          // Preserve text alignment
+          const currentAlignment = layer.style.textAlign || "center";
+          layer.style.textAlign = currentAlignment;
         }
       });
 
@@ -527,7 +537,7 @@ document.addEventListener("DOMContentLoaded", () => {
         tempDiv.style.wordWrap = "normal";
         tempDiv.style.overflowWrap = "normal";
         tempDiv.style.webkitNbspMode = "normal";
-        tempDiv.style.textAlign = "center";
+        tempDiv.style.textAlign = layer.style.textAlign || "center";
         tempDiv.style.lineHeight = "1.01";
         tempDiv.style.fontSize = getComputedStyle(layer).fontSize;
         tempDiv.style.fontFamily = getComputedStyle(layer).fontFamily;
@@ -553,6 +563,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const widthDuration =
           layer.style.getPropertyValue("--width-duration") || "3s";
         const layerTiming = layer.style.animationTimingFunction;
+        const currentAlignment = layer.style.textAlign || "center";
 
         // Clear the layer content
         layer.innerHTML = "";
@@ -560,11 +571,12 @@ document.addEventListener("DOMContentLoaded", () => {
         // Set the layer width to match the container width
         layer.style.width = "100%";
         layer.style.maxWidth = "100%";
+        layer.style.textAlign = currentAlignment;
 
         // Create a single container for all text
         const textContainer = document.createElement("div");
         textContainer.style.display = "block";
-        textContainer.style.textAlign = "center";
+        textContainer.style.textAlign = currentAlignment;
         textContainer.style.width = "100%";
         textContainer.style.maxWidth = "100%";
         textContainer.style.whiteSpace = "pre-wrap";
@@ -834,6 +846,11 @@ document.addEventListener("DOMContentLoaded", () => {
     hsbSliders[0].value = hsb.h;
     hsbSliders[1].value = hsb.s;
     hsbSliders[2].value = hsb.b;
+
+    // Redraw the image if we're in image mode
+    if (isImageMode && originalImage) {
+      drawImage();
+    }
   }
 
   // Function to randomize all settings
@@ -948,6 +965,13 @@ document.addEventListener("DOMContentLoaded", () => {
   function toggleImageMode() {
     isImageMode = !isImageMode;
 
+    // Always show controls when entering image mode
+    if (isImageMode) {
+      document.querySelector(".controls").classList.remove("hidden");
+      document.querySelector(".text-container").style.transform =
+        "translateY(0)";
+    }
+
     // Toggle image UI and canvas visibility
     document
       .querySelector(".image-controls")
@@ -956,7 +980,7 @@ document.addEventListener("DOMContentLoaded", () => {
       .querySelector(".image-upload-row")
       .classList.toggle("active", isImageMode);
     document
-      .querySelector(".image-blur-row")
+      .querySelector(".rasterization-controls")
       .classList.toggle("active", isImageMode);
     canvasContainer.style.display = isImageMode ? "block" : "none";
 
@@ -1048,7 +1072,15 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  // Draw image with dot rasterization effect
+  let imageOffsetX = 0;
+  let imageOffsetY = 0;
+  let imageZoom = 100;
+  let currentPattern = "dots";
+  let isDragging = false;
+  let lastMouseX = 0;
+  let lastMouseY = 0;
+
+  // Draw image with rasterization effect
   function drawImage() {
     if (!originalImage) {
       console.log("No image loaded");
@@ -1061,7 +1093,7 @@ document.addEventListener("DOMContentLoaded", () => {
     // Calculate scaled dimensions to fill canvas
     const scaleX = canvas.width / originalImage.width;
     const scaleY = canvas.height / originalImage.height;
-    const scale = Math.max(scaleX, scaleY);
+    const scale = Math.max(scaleX, scaleY) * (imageZoom / 100);
 
     const scaledWidth = originalImage.width * scale;
     const scaledHeight = originalImage.height * scale;
@@ -1070,9 +1102,15 @@ document.addEventListener("DOMContentLoaded", () => {
     const centerX = (canvas.width - scaledWidth) / 2;
     const centerY = (canvas.height - scaledHeight) / 2;
 
-    // Apply offset from dragging
-    const x = centerX + imageOffsetX;
-    const y = centerY + imageOffsetY;
+    // Apply offset from dragging and position controls
+    const x =
+      centerX +
+      imageOffsetX +
+      parseInt(document.getElementById("imagePositionX").value);
+    const y =
+      centerY +
+      imageOffsetY +
+      parseInt(document.getElementById("imagePositionY").value);
 
     // Get background color from the body
     const bgColor = getComputedStyle(document.body).backgroundColor;
@@ -1082,7 +1120,7 @@ document.addEventListener("DOMContentLoaded", () => {
     // Draw the image directly first
     ctx.drawImage(originalImage, x, y, scaledWidth, scaledHeight);
 
-    // Now apply the halftone effect on top
+    // Now apply the rasterization effect on top
     const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
     const data = imageData.data;
 
@@ -1092,14 +1130,16 @@ document.addEventListener("DOMContentLoaded", () => {
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
     // Get dot size from slider
+    const dotResolutionSlider = document.getElementById("dotResolution");
     const dotSizeSlider = document.getElementById("dotSize");
-    const dotSpacing = parseInt(dotSizeSlider.value) * 2; // Convert slider value to spacing
-    const maxDotSize = dotSpacing * 0.8; // Maximum dot size relative to spacing
-    const minDotSize = 1;
+    const spacing = parseInt(dotResolutionSlider.value) * 2; // Convert slider value to spacing
+    const sizePercent = parseInt(dotSizeSlider.value) / 100; // Convert slider value to percentage
+    const maxSize = spacing * sizePercent; // Maximum size relative to spacing
+    const minSize = 1;
 
-    // Draw halftone dots
-    for (let i = 0; i < canvas.width; i += dotSpacing) {
-      for (let j = 0; j < canvas.height; j += dotSpacing) {
+    // Draw rasterization pattern
+    for (let i = 0; i < canvas.width; i += spacing) {
+      for (let j = 0; j < canvas.height; j += spacing) {
         const idx = (j * canvas.width + i) * 4;
         const r = data[idx];
         const g = data[idx + 1];
@@ -1107,79 +1147,46 @@ document.addEventListener("DOMContentLoaded", () => {
         const a = data[idx + 3]; // Get alpha value
         const brightness = (r * 0.299 + g * 0.587 + b * 0.114) / 255;
 
-        const dotSize =
-          minDotSize + (maxDotSize - minDotSize) * (1 - brightness);
+        const size = minSize + (maxSize - minSize) * (1 - brightness);
 
-        if (dotSize > minDotSize) {
+        if (size > minSize) {
           // Use the actual color from the image with its original alpha
           ctx.fillStyle = `rgba(${r}, ${g}, ${b}, ${a / 255})`;
-          ctx.beginPath();
-          ctx.arc(
-            i + dotSpacing / 2,
-            j + dotSpacing / 2,
-            dotSize / 2,
-            0,
-            Math.PI * 2
-          );
-          ctx.fill();
+
+          switch (currentPattern) {
+            case "dots":
+              ctx.beginPath();
+              ctx.arc(
+                i + spacing / 2,
+                j + spacing / 2,
+                size / 2,
+                0,
+                Math.PI * 2
+              );
+              ctx.fill();
+              break;
+            case "squares":
+              ctx.fillRect(
+                i + (spacing - size) / 2,
+                j + (spacing - size) / 2,
+                size,
+                size
+              );
+              break;
+            case "lines":
+              const lineWidth = size / 2;
+              ctx.fillRect(
+                i + (spacing - lineWidth) / 2,
+                j + (spacing - size) / 2,
+                lineWidth,
+                size
+              );
+              break;
+          }
         }
       }
     }
   }
-
-  let imageOffsetX = 0;
-  let imageOffsetY = 0;
-  let isDragging = false;
-  let lastMouseX = 0;
-  let lastMouseY = 0;
-
-  // Handle mouse events for dragging
-  canvas.addEventListener("mousedown", (e) => {
-    if (!originalImage) return;
-    isDragging = true;
-    lastMouseX = e.clientX;
-    lastMouseY = e.clientY;
-  });
-
-  canvas.addEventListener("mousemove", (e) => {
-    if (!isDragging || !originalImage) return;
-
-    const deltaX = e.clientX - lastMouseX;
-    const deltaY = e.clientY - lastMouseY;
-
-    imageOffsetX += deltaX;
-    imageOffsetY += deltaY;
-
-    lastMouseX = e.clientX;
-    lastMouseY = e.clientY;
-
-    drawImage();
-  });
-
-  canvas.addEventListener("mouseup", () => {
-    isDragging = false;
-  });
-
-  canvas.addEventListener("mouseleave", () => {
-    isDragging = false;
-  });
-
-  // Image mode text size control
-  const imageTextSizeInput = document.getElementById("imageTextSizeInput");
-  if (imageTextSizeInput) {
-    imageTextSizeInput.addEventListener("input", () => {
-      const size = imageTextSizeInput.value;
-      layers.forEach((layer) => {
-        layer.style.fontSize = `${size}px`;
-      });
-    });
-  }
-
-  // Add click handler to the upload button
-  uploadButton.addEventListener("click", () => {
-    console.log("Upload button clicked");
-    imageUpload.click();
-  });
 
   // Handle image upload
   imageUpload.addEventListener("change", (e) => {
@@ -1213,12 +1220,78 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   // Add dot size slider event listener
+  const dotResolutionSlider = document.getElementById("dotResolution");
   const dotSizeSlider = document.getElementById("dotSize");
+  if (dotResolutionSlider) {
+    dotResolutionSlider.addEventListener("input", () => {
+      drawImage();
+    });
+  }
   if (dotSizeSlider) {
     dotSizeSlider.addEventListener("input", () => {
       drawImage();
     });
   }
+
+  // Handle text alignment in image mode
+  document.querySelectorAll(".alignment-dot").forEach((dot) => {
+    dot.addEventListener("click", () => {
+      // Remove selected class from all dots
+      document.querySelectorAll(".alignment-dot").forEach((d) => {
+        d.classList.remove("selected");
+      });
+      // Add selected class to clicked dot
+      dot.classList.add("selected");
+
+      // Update text alignment for all layers
+      const alignment = dot.dataset.align;
+      layers.forEach((layer) => {
+        layer.style.textAlign = alignment;
+        // If in sequential mode, update the text container alignment
+        if (layer.classList.contains("sequential")) {
+          const textContainer = layer.querySelector("div");
+          if (textContainer) {
+            textContainer.style.textAlign = alignment;
+          }
+        }
+      });
+    });
+  });
+
+  // Handle text position in image mode
+  const textOffsetX = document.getElementById("textOffsetX");
+  const textOffsetY = document.getElementById("textOffsetY");
+
+  function updateTextPosition() {
+    const x = textOffsetX.value;
+    const y = textOffsetY.value;
+
+    layers.forEach((layer) => {
+      layer.style.transform = `translate(calc(-50% + ${x}px), calc(-50% + ${y}px))`;
+    });
+  }
+
+  if (textOffsetX && textOffsetY) {
+    textOffsetX.addEventListener("input", updateTextPosition);
+    textOffsetY.addEventListener("input", updateTextPosition);
+  }
+
+  // Reset text position when exiting image mode
+  function resetTextPosition() {
+    layers.forEach((layer) => {
+      layer.style.transform = "translate(-50%, -50%)";
+    });
+  }
+
+  // Update toggleImageMode function to handle both text and image position
+  const originalToggleImageMode = toggleImageMode;
+  toggleImageMode = function () {
+    originalToggleImageMode();
+    if (!isImageMode) {
+      resetTextPosition();
+      resetImagePosition();
+    }
+  };
 
   // Function to update layer colors
   function updateLayerColors() {
@@ -1328,6 +1401,104 @@ document.addEventListener("DOMContentLoaded", () => {
 
     layer.addEventListener("blur", () => {
       isTyping = false;
+    });
+  });
+
+  // Handle mouse events for dragging
+  canvas.addEventListener("mousedown", (e) => {
+    if (!originalImage) return;
+    isDragging = true;
+    lastMouseX = e.clientX;
+    lastMouseY = e.clientY;
+  });
+
+  canvas.addEventListener("mousemove", (e) => {
+    if (!isDragging || !originalImage) return;
+
+    const deltaX = e.clientX - lastMouseX;
+    const deltaY = e.clientY - lastMouseY;
+
+    imageOffsetX += deltaX;
+    imageOffsetY += deltaY;
+
+    lastMouseX = e.clientX;
+    lastMouseY = e.clientY;
+
+    drawImage();
+  });
+
+  canvas.addEventListener("mouseup", () => {
+    isDragging = false;
+  });
+
+  canvas.addEventListener("mouseleave", () => {
+    isDragging = false;
+  });
+
+  // Add event listeners for image controls
+  const imageZoomSlider = document.getElementById("imageZoom");
+  const imagePositionXSlider = document.getElementById("imagePositionX");
+  const imagePositionYSlider = document.getElementById("imagePositionY");
+
+  if (imageZoomSlider) {
+    imageZoomSlider.addEventListener("input", () => {
+      imageZoom = parseInt(imageZoomSlider.value);
+      drawImage();
+    });
+  }
+
+  if (imagePositionXSlider) {
+    imagePositionXSlider.addEventListener("input", () => {
+      drawImage();
+    });
+  }
+
+  if (imagePositionYSlider) {
+    imagePositionYSlider.addEventListener("input", () => {
+      drawImage();
+    });
+  }
+
+  // Reset image position when exiting image mode
+  function resetImagePosition() {
+    imageOffsetX = 0;
+    imageOffsetY = 0;
+    imageZoom = 100;
+    if (imageZoomSlider) imageZoomSlider.value = 100;
+    if (imagePositionXSlider) imagePositionXSlider.value = 0;
+    if (imagePositionYSlider) imagePositionYSlider.value = 0;
+  }
+
+  // Image mode text size control
+  const imageTextSizeInput = document.getElementById("imageTextSizeInput");
+  if (imageTextSizeInput) {
+    imageTextSizeInput.addEventListener("input", () => {
+      const size = imageTextSizeInput.value;
+      layers.forEach((layer) => {
+        layer.style.fontSize = `${size}px`;
+      });
+    });
+  }
+
+  // Add click handler to the upload button
+  uploadButton.addEventListener("click", () => {
+    console.log("Upload button clicked");
+    imageUpload.click();
+  });
+
+  // Add event listeners for pattern selection
+  document.querySelectorAll(".pattern-dot").forEach((dot) => {
+    dot.addEventListener("click", () => {
+      // Remove selected class from all dots
+      document.querySelectorAll(".pattern-dot").forEach((d) => {
+        d.classList.remove("selected");
+      });
+      // Add selected class to clicked dot
+      dot.classList.add("selected");
+      // Update current pattern
+      currentPattern = dot.dataset.pattern;
+      // Redraw the image
+      drawImage();
     });
   });
 });
