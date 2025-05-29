@@ -261,7 +261,7 @@ input[type="text"] {
     white-space: pre-wrap;
     word-wrap: break-word;
     box-sizing: border-box;
-    line-height: 1.01;
+    line-height: 0.95;
 }
 
 /* Ensure text stays within bounds when using transform */
@@ -312,7 +312,7 @@ input[type="text"] {
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     text-rendering: optimizeLegibility;
-    line-height: 1.01;
+    line-height: 0.95;
     text-align: center;
     --weight-duration: 3s;
     --width-duration: 3s;
@@ -352,9 +352,19 @@ input[type="text"] {
     color: inherit;
 }
 
+.text-layer.sequential {
+    line-height: 0.95;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+}
+
 .text-layer.sequential span {
     animation: weightAnimation var(--weight-duration) infinite,
                widthAnimation var(--width-duration) infinite;
+    line-height: 0.95;
+    margin: 0;
+    padding: 0;
 }
 
 .text-layer.simultaneous {
@@ -362,16 +372,20 @@ input[type="text"] {
                widthAnimation var(--width-duration) infinite;
 }
 
+.text-layer.color-animation.sequential {
+    line-height: 0.95;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+}
+
 .text-layer.color-animation.sequential span {
     animation: weightAnimation var(--weight-duration) infinite,
                widthAnimation var(--width-duration) infinite,
                colorAnimation 3s infinite;
-}
-
-.text-layer.color-animation.simultaneous {
-    animation: weightAnimation var(--weight-duration) infinite,
-               widthAnimation var(--width-duration) infinite,
-               colorAnimation 3s infinite;
+    line-height: 0.95;
+    margin: 0;
+    padding: 0;
 }
 
 .layer-1 {

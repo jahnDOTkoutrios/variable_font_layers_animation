@@ -560,7 +560,7 @@ document.addEventListener("DOMContentLoaded", () => {
         tempDiv.style.overflowWrap = "normal";
         tempDiv.style.webkitNbspMode = "normal";
         tempDiv.style.textAlign = layer.style.textAlign || "center";
-        tempDiv.style.lineHeight = "1.01";
+        tempDiv.style.lineHeight = "0.75";
         tempDiv.style.fontSize = getComputedStyle(layer).fontSize;
         tempDiv.style.fontFamily = getComputedStyle(layer).fontFamily;
         tempDiv.style.padding = getComputedStyle(layer).padding;
@@ -605,7 +605,7 @@ document.addEventListener("DOMContentLoaded", () => {
         textContainer.style.wordWrap = "normal";
         textContainer.style.overflowWrap = "normal";
         textContainer.style.webkitNbspMode = "normal";
-        textContainer.style.lineHeight = "1.01";
+        textContainer.style.lineHeight = "0.75";
         textContainer.style.padding = "0";
         textContainer.style.margin = "0";
 
@@ -941,10 +941,46 @@ document.addEventListener("DOMContentLoaded", () => {
       .querySelector(".shadow-dot")
       .classList.contains("selected");
 
+    // Store current text content
+    const baseText = layers[0].textContent;
+
     // Apply toggle states
     layers.forEach((layer) => {
+      // Remove both mode classes
       layer.classList.remove("simultaneous", "sequential");
+
+      // Add the new mode class
       layer.classList.add(isSequential ? "sequential" : "simultaneous");
+
+      // Reset line height based on mode
+      layer.style.lineHeight = "0.95";
+
+      // Handle the text content based on mode
+      if (isSequential) {
+        // For sequential mode, we'll let updateLetterSpans handle the content
+        layer.textContent = baseText;
+        // Disable cursor and make content uneditable in sequence mode
+        layer.style.cursor = "default";
+        layer.contentEditable = "false";
+        // Remove any existing selection
+        window.getSelection().removeAllRanges();
+        // Preserve text alignment
+        const currentAlignment = layer.style.textAlign || "center";
+        layer.style.textAlign = currentAlignment;
+      } else {
+        // For simultaneous mode, ensure we have clean text without spans
+        layer.textContent = baseText;
+        // Enable cursor and make content editable in normal mode
+        layer.style.cursor = "text";
+        layer.contentEditable = "true";
+        // Remove any existing selection
+        window.getSelection().removeAllRanges();
+        // Preserve text alignment
+        const currentAlignment = layer.style.textAlign || "center";
+        layer.style.textAlign = currentAlignment;
+      }
+
+      // Apply other styles
       layer.style.animationTimingFunction = isExp
         ? "cubic-bezier(0.95, 0.05, 0.795, 0.035)"
         : "ease-in-out";
