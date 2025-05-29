@@ -55,6 +55,12 @@ document.addEventListener("DOMContentLoaded", () => {
     document.getElementById("layer3"),
   ];
 
+  // Set default text for all layers
+  const defaultText = "The Quick\nBrown Fox\nJumps Over the\nLazy Dog.";
+  layers.forEach((layer) => {
+    layer.textContent = defaultText;
+  });
+
   // Randomize initial colors
   layers.forEach((layer, index) => {
     const color = getRandomColor();
@@ -129,7 +135,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Set initial size
   layers.forEach((layer) => {
-    layer.style.fontSize = "250px";
+    layer.style.fontSize = "200px";
     layer.style.width = "100%";
     layer.style.maxWidth = "100%";
   });
@@ -1163,7 +1169,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
       // Reset to default size and remove constraints
       layers.forEach((layer) => {
-        layer.style.fontSize = "250px";
+        layer.style.fontSize = "200px";
         layer.style.width = "";
         layer.style.maxWidth = "";
         layer.style.overflow = "";
@@ -1446,6 +1452,12 @@ document.addEventListener("DOMContentLoaded", () => {
       textContainer.style.transform = controls.classList.contains("hidden")
         ? "translateY(-80px)"
         : "translateY(0)";
+
+      // Adjust text size based on fullscreen state
+      const isFullscreen = controls.classList.contains("hidden");
+      layers.forEach((layer) => {
+        layer.style.fontSize = isFullscreen ? "250px" : "200px";
+      });
     }
   }
 
