@@ -1143,6 +1143,8 @@ document.addEventListener("DOMContentLoaded", () => {
   let isDragging = false;
   let lastMouseX = 0;
   let lastMouseY = 0;
+  let recorder = null;
+  let isRecording = false;
 
   // Draw image with rasterization effect
   function drawImage() {
@@ -1426,7 +1428,14 @@ document.addEventListener("DOMContentLoaded", () => {
 
     switch (e.key.toLowerCase()) {
       case "r":
-        updateLayerColors();
+        if (e.ctrlKey || e.metaKey) {
+          const recordDot = document.querySelector(".record-dot");
+          if (recordDot) {
+            recordDot.click();
+          }
+        } else {
+          updateLayerColors();
+        }
         break;
       case "t":
         randomizeBackground();
@@ -1573,4 +1582,224 @@ document.addEventListener("DOMContentLoaded", () => {
     originalImage = defaultImage;
     drawImage();
   };
+
+  // Function to start recording
+  /*
+  function startRecording() {
+    const canvas = document.createElement("canvas");
+    const ctx = canvas.getContext("2d");
+
+    // Set canvas size with higher resolution
+    const scale = 2; // Scale factor for higher resolution
+    canvas.width = window.innerWidth * scale;
+    canvas.height = window.innerHeight * scale;
+
+    // Scale the context to match the higher resolution
+    ctx.scale(scale, scale);
+
+    // Get supported mime type
+    const mimeTypes = [
+      "video/webm;codecs=vp9",
+      "video/webm;codecs=vp8",
+      "video/webm",
+      "video/mp4",
+    ];
+
+    let selectedMimeType = "";
+    for (const mimeType of mimeTypes) {
+      if (MediaRecorder.isTypeSupported(mimeType)) {
+        selectedMimeType = mimeType;
+        break;
+      }
+    }
+
+    if (!selectedMimeType) {
+      alert("Video recording is not supported in your browser.");
+      return;
+    }
+
+    const stream = canvas.captureStream(60); // 60 FPS for smoother animation
+    recorder = new MediaRecorder(stream, {
+      mimeType: selectedMimeType,
+      videoBitsPerSecond: 8000000, // 8 Mbps for higher quality
+    });
+    const chunks = [];
+
+    // Start recording
+    recorder.start();
+    isRecording = true;
+
+    const startTime = Date.now();
+    let frameCount = 0;
+
+    function draw() {
+      if (!isRecording) return;
+
+      // Clear canvas
+      ctx.fillStyle = getComputedStyle(document.body).backgroundColor;
+      ctx.fillRect(0, 0, canvas.width / scale, canvas.height / scale);
+
+      // Calculate center coordinates
+      const centerX = canvas.width / scale / 2;
+      const centerY = canvas.height / scale / 2;
+
+      // Draw text layers
+      layers.forEach((layer) => {
+        const fontSize = parseInt(layer.style.fontSize);
+        const currentTime = (Date.now() - startTime) / 1000;
+
+        // Get the correct animation durations from CSS variables
+        const weightDuration =
+          parseFloat(layer.style.getPropertyValue("--weight-duration")) || 3;
+        const widthDuration =
+          parseFloat(layer.style.getPropertyValue("--width-duration")) || 3;
+        const layerDelay = parseFloat(layer.style.animationDelay) || 0;
+
+        // Get the computed style of the layer
+        const layerStyle = window.getComputedStyle(layer);
+        const lineHeight = parseFloat(layerStyle.lineHeight);
+
+        if (layer.classList.contains("sequential")) {
+          // For sequential mode, draw each span separately
+          const spans = layer.querySelectorAll("span");
+          let currentLine = 0;
+          let xOffset = 0;
+          let maxLineWidth = 0;
+          let lineWidths = [];
+          let lineSpans = [];
+
+          // First pass: calculate line widths and group spans by line
+          spans.forEach((span, index) => {
+            if (span.textContent === "\n") {
+              lineWidths.push(xOffset);
+              maxLineWidth = Math.max(maxLineWidth, xOffset);
+              xOffset = 0;
+              currentLine++;
+              lineSpans[currentLine] = [];
+            } else {
+              if (!lineSpans[currentLine]) lineSpans[currentLine] = [];
+              lineSpans[currentLine].push(span);
+              xOffset += ctx.measureText(span.textContent).width;
+            }
+          });
+          lineWidths.push(xOffset);
+          maxLineWidth = Math.max(maxLineWidth, xOffset);
+
+          // Second pass: draw each line
+          const totalHeight = lineSpans.length * lineHeight;
+          let yOffset = centerY - totalHeight / 2 + lineHeight / 2;
+
+          lineSpans.forEach((line, lineIndex) => {
+            if (line.length === 0) {
+              yOffset += lineHeight;
+              return;
+            }
+            xOffset = 0;
+            line.forEach((span) => {
+              const spanDelay = parseFloat(span.style.animationDelay) || 0;
+
+              // Calculate both weight and width animations
+              const weightTime = (currentTime - spanDelay) % weightDuration;
+              const widthTime = (currentTime - spanDelay) % widthDuration;
+              const weightProgress = weightTime / weightDuration;
+              const widthProgress = widthTime / widthDuration;
+
+              // Calculate font weight and stretch using the same animation curves as CSS
+              // Using exact ranges from CSS keyframes: 101-200 for weight, 101%-200% for stretch
+              const weight = 101 + 99 * Math.sin(weightProgress * Math.PI);
+              const stretch = 101 + 99 * Math.sin(widthProgress * Math.PI);
+
+              // Set both font-weight and font-stretch
+              ctx.font = `${weight} ${stretch}% ${fontSize}px Offgrid`;
+              ctx.fillStyle = layer.style.color;
+              ctx.textAlign = "left";
+              ctx.textBaseline = "middle";
+
+              const textWidth = ctx.measureText(span.textContent).width;
+              ctx.fillText(
+                span.textContent,
+                centerX - lineWidths[lineIndex] / 2 + xOffset,
+                yOffset
+              );
+              xOffset += textWidth;
+            });
+            yOffset += lineHeight;
+          });
+        } else {
+          // For simultaneous mode
+          const weightTime = (currentTime - layerDelay) % weightDuration;
+          const widthTime = (currentTime - layerDelay) % widthDuration;
+          const weightProgress = weightTime / weightDuration;
+          const widthProgress = widthTime / widthDuration;
+
+          // Calculate font weight and stretch using the same animation curves as CSS
+          // Using exact ranges from CSS keyframes: 101-200 for weight, 101%-200% for stretch
+          const weight = 101 + 99 * Math.sin(weightProgress * Math.PI);
+          const stretch = 101 + 99 * Math.sin(widthProgress * Math.PI);
+
+          // Set both font-weight and font-stretch
+          ctx.font = `${weight} ${stretch}% ${fontSize}px Offgrid`;
+          ctx.fillStyle = layer.style.color;
+          ctx.textAlign = "center";
+          ctx.textBaseline = "middle";
+
+          // Handle line breaks in simultaneous mode
+          const lines = layer.textContent.split("\n");
+          const totalHeight = lines.length * lineHeight;
+          let yOffset = centerY - totalHeight / 2 + lineHeight / 2;
+
+          lines.forEach((line) => {
+            if (line.trim() === "") {
+              yOffset += lineHeight;
+              return;
+            }
+            ctx.fillText(line, centerX, yOffset);
+            yOffset += lineHeight;
+          });
+        }
+      });
+
+      requestAnimationFrame(draw);
+    }
+
+    draw();
+
+    recorder.ondataavailable = (e) => chunks.push(e.data);
+    recorder.onstop = () => {
+      const extension = selectedMimeType.includes("webm") ? "webm" : "mp4";
+      const blob = new Blob(chunks, { type: selectedMimeType });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `variable-font-animation.${extension}`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    };
+  }
+
+  // Function to stop recording
+  function stopRecording() {
+    if (!recorder || !isRecording) return;
+    isRecording = false;
+    recorder.stop();
+  }
+
+  // Handle record button click
+  document.addEventListener("click", (e) => {
+    if (e.target.classList.contains("record-dot")) {
+      const isOn = e.target.classList.contains("selected");
+
+      // Toggle selected class
+      e.target.classList.toggle("selected");
+
+      if (!isOn) {
+        startRecording();
+      } else {
+        stopRecording();
+      }
+    }
+  });
+  */
 });

@@ -7,9 +7,9 @@
 
 @font-face {
     font-family: 'Offgrid';
-    src: url('foldy_250415Offgrid-variableV3VF.ttf') format('truetype-variations');
+    src: url('250526_Offgrid_VariableVF.ttf') format('truetype-variations');
     font-weight: 101 200;
-    font-variation-settings: 'wght' 101, 'wdth' 101;
+    font-stretch: 101% 200%;
 }
 
 body {
@@ -704,6 +704,8 @@ body:has(.text-container.image-mode) .color-slider input[type="range"]::-webkit-
     border: 1px solid #fff;
 }
 
+/* Export button styles */
+/*
 .export-button {
     position: fixed;
     bottom: 20px;
@@ -780,6 +782,47 @@ body:has(.text-container.image-mode) .color-slider input[type="range"]::-webkit-
 .export-option:hover {
     color: #fff;
 }
+*/
+
+/* Record button styles */
+/*
+.record-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: transform 0.2s ease, background-color 0.2s ease;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    background: #404040;
+    position: relative;
+}
+
+.record-dot:hover {
+    transform: scale(1.2);
+    background: #666;
+}
+
+.record-dot.selected {
+    border: 1px solid #ff4444;
+    background: #ff4444;
+    animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+    0% {
+        transform: scale(1);
+        opacity: 1;
+    }
+    50% {
+        transform: scale(1.2);
+        opacity: 0.7;
+    }
+    100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+*/
 
 .visibility-toggle {
     display: flex;
