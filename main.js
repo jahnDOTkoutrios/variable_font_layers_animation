@@ -122,8 +122,11 @@ document.addEventListener("DOMContentLoaded", () => {
   // Handle text size
   const textSizeInput = document.getElementById("textSizeInput");
   const textSizeValue = document.getElementById("textSizeValue");
+  let originalSize = 200; // Store the original size
+
   textSizeInput.addEventListener("input", (e) => {
     const size = e.target.value;
+    originalSize = parseInt(size); // Update original size when slider changes
     textSizeValue.textContent = `${size} px`;
     layers.forEach((layer) => {
       layer.style.fontSize = `${size}px`;
@@ -1083,6 +1086,7 @@ document.addEventListener("DOMContentLoaded", () => {
         layer.style.maxWidth = `${canvasWidth}px`;
         layer.style.overflow = "hidden";
         layer.style.wordWrap = "break-word";
+        layer.style.whiteSpace = "pre-wrap";
       });
 
       // Restore saved settings
@@ -1167,13 +1171,16 @@ document.addEventListener("DOMContentLoaded", () => {
       textContainer.style.overflow = "";
       textContainer.style.wordWrap = "";
 
-      // Reset to default size and remove constraints
+      // Reset to original size and remove constraints
       layers.forEach((layer) => {
-        layer.style.fontSize = "200px";
-        layer.style.width = "";
-        layer.style.maxWidth = "";
+        layer.style.fontSize = `${originalSize}px`;
+        layer.style.width = "100%";
+        layer.style.maxWidth = "100%";
         layer.style.overflow = "";
         layer.style.wordWrap = "";
+        layer.style.whiteSpace = "pre-wrap";
+        // Reset any transform that might have been applied
+        layer.style.transform = "translate(-50%, -45%)";
       });
     }
   }
@@ -1448,15 +1455,20 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // Only move text if we're not in image mode
     if (!isImageMode) {
+      // Force a reflow to ensure the transition is triggered
+      void controls.offsetWidth;
+
       controls.classList.toggle("hidden");
       textContainer.style.transform = controls.classList.contains("hidden")
-        ? "translateY(-80px)"
+        ? "translateY(-65px)"
         : "translateY(0)";
 
       // Adjust text size based on fullscreen state
       const isFullscreen = controls.classList.contains("hidden");
+      const scaleFactor = isFullscreen ? 1.05 : 1; // Scale up by 5% in fullscreen
+
       layers.forEach((layer) => {
-        layer.style.fontSize = isFullscreen ? "250px" : "200px";
+        layer.style.fontSize = `${originalSize * scaleFactor}px`;
       });
     }
   }

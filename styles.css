@@ -44,6 +44,12 @@ body {
     user-select: none;
     -webkit-user-select: none;
     border: 1px solid rgba(255, 255, 255, 0.1);
+    transition: transform 0.3s ease-out, opacity 0.3s ease-out;
+}
+
+/* Make transitions immediate when in image mode */
+.text-container.image-mode ~ .controls,
+body:has(.text-container.image-mode) .controls {
     transition: none;
 }
 
@@ -51,23 +57,6 @@ body {
     transform: translateX(-50%) translateY(-100%);
     opacity: 0;
     pointer-events: none;
-}
-
-/* Add new styles for fullscreen mode */
-body:fullscreen .controls,
-body:-webkit-full-screen .controls {
-    transform: translateX(-50%) translateY(-100%);
-    opacity: 0;
-    pointer-events: none;
-    transition: transform 0.3s ease, opacity 0.3s ease;
-}
-
-/* Add transition for entering/exiting fullscreen */
-body:fullscreen .controls,
-body:-webkit-full-screen .controls,
-body:fullscreen .controls.hidden,
-body:-webkit-full-screen .controls.hidden {
-    transition: transform 0.3s ease, opacity 0.3s ease;
 }
 
 .control-group {
@@ -199,8 +188,13 @@ input[type="text"] {
     cursor: text;
     overflow: hidden;
     padding: 2rem;
-    transition: transform 0.3s ease, width 0.3s ease, height 0.3s ease;
+    transition: transform 0.3s ease-out;
     padding-top: 4rem;
+}
+
+/* Make transitions immediate when in image mode */
+.text-container.image-mode {
+    transition: none;
 }
 
 .text-container.image-mode {
