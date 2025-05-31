@@ -1473,6 +1473,15 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
+  // Add variables to store layer states
+  let previousLayerStates = {
+    layer2: { opacity: "1", pointerEvents: "auto" },
+    layer3: { opacity: "1", pointerEvents: "auto" },
+  };
+
+  // Add variable to track animation state
+  let isAnimationPaused = false;
+
   // Add hotkey listeners
   document.addEventListener("keydown", (e) => {
     if (e.key === "Escape") {
@@ -1487,6 +1496,96 @@ document.addEventListener("DOMContentLoaded", () => {
     if (isTyping) return;
 
     switch (e.key.toLowerCase()) {
+      case " ":
+        // Toggle animation pause state
+        isAnimationPaused = !isAnimationPaused;
+        const textLayers = document.querySelectorAll(".text-layer");
+
+        textLayers.forEach((layer) => {
+          if (isAnimationPaused) {
+            // Pause animations
+            layer.style.animationPlayState = "paused";
+            // Also pause animations on individual spans if in sequential mode
+            const spans = layer.querySelectorAll("span");
+            spans.forEach((span) => {
+              span.style.animationPlayState = "paused";
+            });
+          } else {
+            // Resume animations
+            layer.style.animationPlayState = "running";
+            // Also resume animations on individual spans if in sequential mode
+            const spans = layer.querySelectorAll("span");
+            spans.forEach((span) => {
+              span.style.animationPlayState = "running";
+            });
+          }
+        });
+        break;
+      case "b":
+        // Toggle between regular and rounded font
+        const layers = document.querySelectorAll(".text-layer");
+        const isRounded =
+          layers[0].style.fontFamily === "OffgridRounded, sans-serif";
+
+        if (isRounded) {
+          // Switching back to regular font - restore previous states
+          const layer2 = document.getElementById("layer2");
+          const layer3 = document.getElementById("layer3");
+          layer2.style.opacity = previousLayerStates.layer2.opacity;
+          layer2.style.pointerEvents = previousLayerStates.layer2.pointerEvents;
+          layer3.style.opacity = previousLayerStates.layer3.opacity;
+          layer3.style.pointerEvents = previousLayerStates.layer3.pointerEvents;
+
+          // Update layer toggles
+          document
+            .querySelector('.layer-toggle[data-layer="2"]')
+            .classList.toggle(
+              "active",
+              previousLayerStates.layer2.opacity === "1"
+            );
+          document
+            .querySelector('.layer-toggle[data-layer="3"]')
+            .classList.toggle(
+              "active",
+              previousLayerStates.layer3.opacity === "1"
+            );
+        } else {
+          // Switching to rounded font - store current states and hide layers 2 and 3
+          const layer2 = document.getElementById("layer2");
+          const layer3 = document.getElementById("layer3");
+
+          // Store current states
+          previousLayerStates.layer2 = {
+            opacity: layer2.style.opacity,
+            pointerEvents: layer2.style.pointerEvents,
+          };
+          previousLayerStates.layer3 = {
+            opacity: layer3.style.opacity,
+            pointerEvents: layer3.style.pointerEvents,
+          };
+
+          // Hide layers 2 and 3
+          layer2.style.opacity = "0";
+          layer2.style.pointerEvents = "none";
+          layer3.style.opacity = "0";
+          layer3.style.pointerEvents = "none";
+
+          // Update layer toggles
+          document
+            .querySelector('.layer-toggle[data-layer="2"]')
+            .classList.remove("active");
+          document
+            .querySelector('.layer-toggle[data-layer="3"]')
+            .classList.remove("active");
+        }
+
+        // Switch the font
+        layers.forEach((layer) => {
+          layer.style.fontFamily = isRounded
+            ? "Offgrid, sans-serif"
+            : "OffgridRounded, sans-serif";
+        });
+        break;
       case "r":
         if (e.ctrlKey || e.metaKey) {
           const recordDot = document.querySelector(".record-dot");
