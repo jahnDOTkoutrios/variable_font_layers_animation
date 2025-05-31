@@ -691,6 +691,75 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
+  // Handle rounded mode toggle
+  document.addEventListener("click", (e) => {
+    if (e.target.classList.contains("rounded-dot")) {
+      const isRounded = e.target.classList.contains("selected");
+
+      // Toggle selected class
+      e.target.classList.toggle("selected");
+
+      if (isRounded) {
+        // Switching back to regular font - restore previous states
+        const layer2 = document.getElementById("layer2");
+        const layer3 = document.getElementById("layer3");
+        layer2.style.opacity = previousLayerStates.layer2.opacity;
+        layer2.style.pointerEvents = previousLayerStates.layer2.pointerEvents;
+        layer3.style.opacity = previousLayerStates.layer3.opacity;
+        layer3.style.pointerEvents = previousLayerStates.layer3.pointerEvents;
+
+        // Update layer toggles
+        document
+          .querySelector('.layer-toggle[data-layer="2"]')
+          .classList.toggle(
+            "active",
+            previousLayerStates.layer2.opacity === "1"
+          );
+        document
+          .querySelector('.layer-toggle[data-layer="3"]')
+          .classList.toggle(
+            "active",
+            previousLayerStates.layer3.opacity === "1"
+          );
+      } else {
+        // Switching to rounded font - store current states and hide layers 2 and 3
+        const layer2 = document.getElementById("layer2");
+        const layer3 = document.getElementById("layer3");
+
+        // Store current states
+        previousLayerStates.layer2 = {
+          opacity: layer2.style.opacity,
+          pointerEvents: layer2.style.pointerEvents,
+        };
+        previousLayerStates.layer3 = {
+          opacity: layer3.style.opacity,
+          pointerEvents: layer3.style.pointerEvents,
+        };
+
+        // Hide layers 2 and 3
+        layer2.style.opacity = "0";
+        layer2.style.pointerEvents = "none";
+        layer3.style.opacity = "0";
+        layer3.style.pointerEvents = "none";
+
+        // Update layer toggles
+        document
+          .querySelector('.layer-toggle[data-layer="2"]')
+          .classList.remove("active");
+        document
+          .querySelector('.layer-toggle[data-layer="3"]')
+          .classList.remove("active");
+      }
+
+      // Switch the font
+      layers.forEach((layer) => {
+        layer.style.fontFamily = isRounded
+          ? "Offgrid, sans-serif"
+          : "OffgridRounded, sans-serif";
+      });
+    }
+  });
+
   // Handle layer toggle
   document.querySelectorAll(".layer-toggle").forEach((toggle) => {
     toggle.addEventListener("click", function () {
@@ -798,48 +867,6 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     }
   });
-
-  // Color toggle functionality
-  document
-    .querySelector(".color-toggle .color-dot")
-    .addEventListener("click", function () {
-      this.classList.toggle("selected");
-      const isColorAnimation = this.classList.contains("selected");
-
-      // Get the current colors from each layer
-      const layer1Color = document.querySelector(
-        '.color-dot-wrapper[data-layer="1"] .color-dot'
-      ).style.background;
-      const layer2Color = document.querySelector(
-        '.color-dot-wrapper[data-layer="2"] .color-dot'
-      ).style.background;
-      const layer3Color = document.querySelector(
-        '.color-dot-wrapper[data-layer="3"] .color-dot'
-      ).style.background;
-
-      // Set CSS variables for the colors
-      document.documentElement.style.setProperty(
-        "--layer-1-color",
-        layer1Color
-      );
-      document.documentElement.style.setProperty(
-        "--layer-2-color",
-        layer2Color
-      );
-      document.documentElement.style.setProperty(
-        "--layer-3-color",
-        layer3Color
-      );
-
-      // Toggle color animation class on all layers
-      document.querySelectorAll(".text-layer").forEach((layer) => {
-        if (isColorAnimation) {
-          layer.classList.add("color-animation");
-        } else {
-          layer.classList.remove("color-animation");
-        }
-      });
-    });
 
   // Function to generate random color
   function getRandomColor() {
