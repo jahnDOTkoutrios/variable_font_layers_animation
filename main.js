@@ -569,10 +569,10 @@ document.addEventListener("DOMContentLoaded", () => {
         tempDiv.style.overflowWrap = "normal";
         tempDiv.style.webkitNbspMode = "normal";
         tempDiv.style.textAlign = layer.style.textAlign || "center";
-        tempDiv.style.lineHeight = "0.75";
+        tempDiv.style.lineHeight = layer.style.lineHeight || "0.75";
         tempDiv.style.fontSize = getComputedStyle(layer).fontSize;
         tempDiv.style.fontFamily = getComputedStyle(layer).fontFamily;
-        tempDiv.style.padding = getComputedStyle(layer).padding;
+        tempDiv.style.padding = layer.style.padding || "0";
         tempDiv.style.margin = getComputedStyle(layer).margin;
         tempDiv.textContent = baseText;
         document.body.appendChild(tempDiv);
@@ -595,6 +595,10 @@ document.addEventListener("DOMContentLoaded", () => {
           layer.style.getPropertyValue("--width-duration") || "3s";
         const layerTiming = layer.style.animationTimingFunction;
         const currentAlignment = layer.style.textAlign || "center";
+        const currentLineHeight = layer.style.lineHeight || "0.75";
+        const currentPadding = layer.style.padding || "0";
+        const currentTransform =
+          layer.style.transform || "translate(-50%, -45%)";
 
         // Clear the layer content
         layer.innerHTML = "";
@@ -603,6 +607,9 @@ document.addEventListener("DOMContentLoaded", () => {
         layer.style.width = "100%";
         layer.style.maxWidth = "100%";
         layer.style.textAlign = currentAlignment;
+        layer.style.lineHeight = currentLineHeight;
+        layer.style.padding = currentPadding;
+        layer.style.transform = currentTransform;
 
         // Create a single container for all text
         const textContainer = document.createElement("div");
@@ -614,7 +621,7 @@ document.addEventListener("DOMContentLoaded", () => {
         textContainer.style.wordWrap = "normal";
         textContainer.style.overflowWrap = "normal";
         textContainer.style.webkitNbspMode = "normal";
-        textContainer.style.lineHeight = "0.75";
+        textContainer.style.lineHeight = currentLineHeight;
         textContainer.style.padding = "0";
         textContainer.style.margin = "0";
 
@@ -1509,6 +1516,16 @@ document.addEventListener("DOMContentLoaded", () => {
   // Add variable to track animation state
   let isAnimationPaused = false;
 
+  // Add variable to track zero mode state
+  let isZeroMode = false;
+  let zeroModeStates = {
+    layer2: { opacity: "1", pointerEvents: "auto" },
+    layer3: { opacity: "1", pointerEvents: "auto" },
+    weight: "101",
+    width: "101%",
+    animationState: "running",
+  };
+
   // Add hotkey listeners
   document.addEventListener("keydown", (e) => {
     if (e.key === "Escape") {
@@ -1517,12 +1534,401 @@ document.addEventListener("DOMContentLoaded", () => {
       } else if (isImageMode) {
         toggleImageMode();
       }
-      return;
     }
 
     if (isTyping) return;
 
+    // Get all visible layers
+    const visibleLayers = document.querySelectorAll(
+      ".text-layer:not([style*='opacity: 0'])"
+    );
+    if (visibleLayers.length === 0) return;
+
+    // Small increment for smooth changes
+    const increment = 0.5;
+
+    // Handle Alt + arrow keys for text alignment
+    if (e.altKey) {
+      switch (e.key.toLowerCase()) {
+        case "arrowleft":
+          // Alt + Left: Left align
+          visibleLayers.forEach((layer) => {
+            layer.style.textAlign = "left";
+            // If in sequential mode, update the text container alignment
+            if (layer.classList.contains("sequential")) {
+              const textContainer = layer.querySelector("div");
+              if (textContainer) {
+                textContainer.style.textAlign = "left";
+              }
+            }
+          });
+          // Update alignment dots
+          document.querySelectorAll(".alignment-dot").forEach((dot) => {
+            dot.classList.toggle("selected", dot.dataset.align === "left");
+          });
+          break;
+        case "arrowdown":
+          // Alt + Down: Center align
+          visibleLayers.forEach((layer) => {
+            layer.style.textAlign = "center";
+            // If in sequential mode, update the text container alignment
+            if (layer.classList.contains("sequential")) {
+              const textContainer = layer.querySelector("div");
+              if (textContainer) {
+                textContainer.style.textAlign = "center";
+              }
+            }
+          });
+          // Update alignment dots
+          document.querySelectorAll(".alignment-dot").forEach((dot) => {
+            dot.classList.toggle("selected", dot.dataset.align === "center");
+          });
+          break;
+        case "arrowright":
+          // Alt + Right: Right align
+          visibleLayers.forEach((layer) => {
+            layer.style.textAlign = "right";
+            // If in sequential mode, update the text container alignment
+            if (layer.classList.contains("sequential")) {
+              const textContainer = layer.querySelector("div");
+              if (textContainer) {
+                textContainer.style.textAlign = "right";
+              }
+            }
+          });
+          // Update alignment dots
+          document.querySelectorAll(".alignment-dot").forEach((dot) => {
+            dot.classList.toggle("selected", dot.dataset.align === "right");
+          });
+          break;
+      }
+      return; // Prevent other key handlers from running
+    }
+
     switch (e.key.toLowerCase()) {
+      case "arrowleft":
+        if (e.shiftKey) {
+          // Shift + Left: Move text left
+          visibleLayers.forEach((layer) => {
+            const currentTransform =
+              layer.style.transform || "translate(-50%, -45%)";
+            const transformMatch = currentTransform.match(
+              /translate\(([^,]+),\s*([^)]+)\)/
+            );
+            const currentX = transformMatch
+              ? parseFloat(transformMatch[1])
+              : -50;
+            const currentY = transformMatch
+              ? parseFloat(transformMatch[2])
+              : -45;
+            layer.style.transform = `translate(${
+              currentX - increment
+            }%, ${currentY}%)`;
+          });
+        } else {
+          // Left: Decrease letter spacing
+          visibleLayers.forEach((layer) => {
+            const currentLetterSpacing =
+              parseFloat(layer.style.letterSpacing) || 0;
+            layer.style.letterSpacing = `${currentLetterSpacing - increment}px`;
+          });
+        }
+        break;
+      case "arrowright":
+        if (e.shiftKey) {
+          // Shift + Right: Move text right
+          visibleLayers.forEach((layer) => {
+            const currentTransform =
+              layer.style.transform || "translate(-50%, -45%)";
+            const transformMatch = currentTransform.match(
+              /translate\(([^,]+),\s*([^)]+)\)/
+            );
+            const currentX = transformMatch
+              ? parseFloat(transformMatch[1])
+              : -50;
+            const currentY = transformMatch
+              ? parseFloat(transformMatch[2])
+              : -45;
+            layer.style.transform = `translate(${
+              currentX + increment
+            }%, ${currentY}%)`;
+          });
+        } else {
+          // Right: Increase letter spacing
+          visibleLayers.forEach((layer) => {
+            const currentLetterSpacing =
+              parseFloat(layer.style.letterSpacing) || 0;
+            layer.style.letterSpacing = `${currentLetterSpacing + increment}px`;
+          });
+        }
+        break;
+      case "arrowup":
+        if (e.shiftKey) {
+          // Shift + Up: Move text up
+          visibleLayers.forEach((layer) => {
+            const currentTransform =
+              layer.style.transform || "translate(-50%, -45%)";
+            const transformMatch = currentTransform.match(
+              /translate\(([^,]+),\s*([^)]+)\)/
+            );
+            const currentX = transformMatch
+              ? parseFloat(transformMatch[1])
+              : -50;
+            const currentY = transformMatch
+              ? parseFloat(transformMatch[2])
+              : -45;
+            layer.style.transform = `translate(${currentX}%, ${
+              currentY - increment
+            }%)`;
+          });
+        } else {
+          // Up: Decrease line height while maintaining container height
+          visibleLayers.forEach((layer) => {
+            const currentLineHeight =
+              parseFloat(layer.style.lineHeight) || 0.95;
+            const currentTransform =
+              layer.style.transform || "translate(-50%, -45%)";
+            const transformMatch = currentTransform.match(
+              /translate\(([^,]+),\s*([^)]+)\)/
+            );
+            const currentX = transformMatch
+              ? parseFloat(transformMatch[1])
+              : -50;
+            const currentY = transformMatch
+              ? parseFloat(transformMatch[2])
+              : -45;
+
+            // Calculate new line height with smaller increment
+            const newLineHeight = currentLineHeight - increment / 50;
+            layer.style.lineHeight = `${newLineHeight}`;
+
+            // Calculate padding adjustment based on line height change
+            const paddingAdjustment = (currentLineHeight - newLineHeight) * 100;
+
+            // Set minimum padding to prevent text cutoff
+            const minPadding = 20;
+            const currentPadding = parseFloat(layer.style.padding) || 0;
+            const newPadding = Math.max(
+              currentPadding + paddingAdjustment / 2,
+              minPadding
+            );
+            layer.style.padding = `${newPadding}px`;
+
+            // Ensure container has enough height
+            layer.style.minHeight = `${
+              layer.offsetHeight + paddingAdjustment
+            }px`;
+
+            // Adjust vertical position to keep text centered
+            const yAdjustment = paddingAdjustment / 4;
+            layer.style.transform = `translate(${currentX}%, ${
+              currentY - yAdjustment
+            }%)`;
+
+            // If in sequential mode, update the text container and spans
+            if (layer.classList.contains("sequential")) {
+              const textContainer = layer.querySelector("div");
+              if (textContainer) {
+                textContainer.style.lineHeight = `${newLineHeight}`;
+                textContainer.style.padding = `${newPadding}px`;
+              }
+              // Update all spans to maintain consistent line height
+              const spans = layer.querySelectorAll("span");
+              spans.forEach((span) => {
+                span.style.lineHeight = `${newLineHeight}`;
+              });
+            }
+
+            // Force a reflow to ensure styles are applied
+            void layer.offsetHeight;
+          });
+        }
+        break;
+      case "arrowdown":
+        if (e.shiftKey) {
+          // Shift + Down: Move text down
+          visibleLayers.forEach((layer) => {
+            const currentTransform =
+              layer.style.transform || "translate(-50%, -45%)";
+            const transformMatch = currentTransform.match(
+              /translate\(([^,]+),\s*([^)]+)\)/
+            );
+            const currentX = transformMatch
+              ? parseFloat(transformMatch[1])
+              : -50;
+            const currentY = transformMatch
+              ? parseFloat(transformMatch[2])
+              : -45;
+            layer.style.transform = `translate(${currentX}%, ${
+              currentY + increment
+            }%)`;
+          });
+        } else {
+          // Down: Increase line height while maintaining container height
+          visibleLayers.forEach((layer) => {
+            const currentLineHeight =
+              parseFloat(layer.style.lineHeight) || 0.95;
+            const currentTransform =
+              layer.style.transform || "translate(-50%, -45%)";
+            const transformMatch = currentTransform.match(
+              /translate\(([^,]+),\s*([^)]+)\)/
+            );
+            const currentX = transformMatch
+              ? parseFloat(transformMatch[1])
+              : -50;
+            const currentY = transformMatch
+              ? parseFloat(transformMatch[2])
+              : -45;
+
+            // Calculate new line height with smaller increment
+            const newLineHeight = currentLineHeight + increment / 50;
+            layer.style.lineHeight = `${newLineHeight}`;
+
+            // Calculate padding adjustment based on line height change
+            const paddingAdjustment = (newLineHeight - currentLineHeight) * 100;
+
+            // Set minimum padding to prevent text cutoff
+            const minPadding = 20;
+            const currentPadding = parseFloat(layer.style.padding) || 0;
+            const newPadding = Math.max(
+              currentPadding + paddingAdjustment / 2,
+              minPadding
+            );
+            layer.style.padding = `${newPadding}px`;
+
+            // Ensure container has enough height
+            layer.style.minHeight = `${
+              layer.offsetHeight + paddingAdjustment
+            }px`;
+
+            // Adjust vertical position to keep text centered
+            const yAdjustment = paddingAdjustment / 4;
+            layer.style.transform = `translate(${currentX}%, ${
+              currentY + yAdjustment
+            }%)`;
+
+            // If in sequential mode, update the text container and spans
+            if (layer.classList.contains("sequential")) {
+              const textContainer = layer.querySelector("div");
+              if (textContainer) {
+                textContainer.style.lineHeight = `${newLineHeight}`;
+                textContainer.style.padding = `${newPadding}px`;
+              }
+              // Update all spans to maintain consistent line height
+              const spans = layer.querySelectorAll("span");
+              spans.forEach((span) => {
+                span.style.lineHeight = `${newLineHeight}`;
+              });
+            }
+
+            // Force a reflow to ensure styles are applied
+            void layer.offsetHeight;
+          });
+        }
+        break;
+      case "0":
+        isZeroMode = !isZeroMode;
+        const layer2 = document.getElementById("layer2");
+        const layer3 = document.getElementById("layer3");
+
+        if (isZeroMode) {
+          // Store current states
+          zeroModeStates.layer2 = {
+            opacity: layer2.style.opacity,
+            pointerEvents: layer2.style.pointerEvents,
+          };
+          zeroModeStates.layer3 = {
+            opacity: layer3.style.opacity,
+            pointerEvents: layer3.style.pointerEvents,
+          };
+          // Store weight and width durations for all layers
+          zeroModeStates.weightDurations = {};
+          zeroModeStates.widthDurations = {};
+          document.querySelectorAll(".text-layer").forEach((layer, index) => {
+            zeroModeStates.weightDurations[`layer${index + 1}`] =
+              layer.style.getPropertyValue("--weight-duration");
+            zeroModeStates.widthDurations[`layer${index + 1}`] =
+              layer.style.getPropertyValue("--width-duration");
+          });
+          zeroModeStates.animationState =
+            document.querySelector(".text-layer").style.animationPlayState;
+
+          // Pause animations and set fixed values
+          document.querySelectorAll(".text-layer").forEach((layer) => {
+            layer.style.animationPlayState = "paused";
+            layer.style.setProperty("--weight-duration", "0s");
+            layer.style.setProperty("--width-duration", "0s");
+            layer.style.fontWeight = "99";
+            layer.style.fontStretch = "99%";
+            const spans = layer.querySelectorAll("span");
+            spans.forEach((span) => {
+              span.style.animationPlayState = "paused";
+              span.style.setProperty("--weight-duration", "0s");
+              span.style.setProperty("--width-duration", "0s");
+              span.style.fontWeight = "99";
+              span.style.fontStretch = "99%";
+            });
+          });
+
+          // Hide layers 2 and 3
+          layer2.style.opacity = "0";
+          layer2.style.pointerEvents = "none";
+          layer3.style.opacity = "0";
+          layer3.style.pointerEvents = "none";
+
+          // Update layer toggles
+          document
+            .querySelector('.layer-toggle[data-layer="2"]')
+            .classList.remove("active");
+          document
+            .querySelector('.layer-toggle[data-layer="3"]')
+            .classList.remove("active");
+        } else {
+          // Restore previous states
+          layer2.style.opacity = zeroModeStates.layer2.opacity;
+          layer2.style.pointerEvents = zeroModeStates.layer2.pointerEvents;
+          layer3.style.opacity = zeroModeStates.layer3.opacity;
+          layer3.style.pointerEvents = zeroModeStates.layer3.pointerEvents;
+
+          // Restore weight and width durations for all layers
+          document.querySelectorAll(".text-layer").forEach((layer, index) => {
+            const layerNum = `layer${index + 1}`;
+            layer.style.animationPlayState = zeroModeStates.animationState;
+            layer.style.setProperty(
+              "--weight-duration",
+              zeroModeStates.weightDurations[layerNum]
+            );
+            layer.style.setProperty(
+              "--width-duration",
+              zeroModeStates.widthDurations[layerNum]
+            );
+            layer.style.fontWeight = "";
+            layer.style.fontStretch = "";
+            const spans = layer.querySelectorAll("span");
+            spans.forEach((span) => {
+              span.style.animationPlayState = zeroModeStates.animationState;
+              span.style.setProperty(
+                "--weight-duration",
+                zeroModeStates.weightDurations[layerNum]
+              );
+              span.style.setProperty(
+                "--width-duration",
+                zeroModeStates.widthDurations[layerNum]
+              );
+              span.style.fontWeight = "";
+              span.style.fontStretch = "";
+            });
+          });
+
+          // Update layer toggles
+          document
+            .querySelector('.layer-toggle[data-layer="2"]')
+            .classList.toggle("active", zeroModeStates.layer2.opacity === "1");
+          document
+            .querySelector('.layer-toggle[data-layer="3"]')
+            .classList.toggle("active", zeroModeStates.layer3.opacity === "1");
+        }
+        break;
       case " ":
         // Toggle animation pause state
         isAnimationPaused = !isAnimationPaused;
@@ -1606,12 +2012,28 @@ document.addEventListener("DOMContentLoaded", () => {
             .classList.remove("active");
         }
 
+        // Store current styles before switching fonts
+        const currentLineHeight = layers[0].style.lineHeight;
+        const currentPadding = layers[0].style.padding;
+        const currentTransform = layers[0].style.transform;
+        const currentLetterSpacing = layers[0].style.letterSpacing;
+
         // Switch the font
         layers.forEach((layer) => {
           layer.style.fontFamily = isRounded
             ? "Offgrid, sans-serif"
             : "OffgridRounded, sans-serif";
+          // Restore styles after font switch
+          layer.style.lineHeight = currentLineHeight;
+          layer.style.padding = currentPadding;
+          layer.style.transform = currentTransform;
+          layer.style.letterSpacing = currentLetterSpacing;
         });
+
+        // If in sequential mode, update the spans
+        if (layers[0].classList.contains("sequential")) {
+          updateLetterSpans();
+        }
         break;
       case "r":
         if (e.ctrlKey || e.metaKey) {
