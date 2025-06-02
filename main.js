@@ -104,6 +104,9 @@ document.addEventListener("DOMContentLoaded", () => {
     layer.style.opacity = settings.visible ? "1" : "0";
     layer.style.pointerEvents = settings.visible ? "auto" : "none";
 
+    // Set initial font variation settings
+    layer.style.fontVariationSettings = "'slnt' 0";
+
     // Set animation durations
     layer.style.setProperty(
       "--weight-duration",
@@ -1544,64 +1547,58 @@ document.addEventListener("DOMContentLoaded", () => {
     );
     if (visibleLayers.length === 0) return;
 
-    // Small increment for smooth changes
-    const increment = 0.5;
+    // Smaller increment for more subtle changes
+    const increment = 2;
+    const shiftIncrement = 10;
 
-    // Handle Alt + arrow keys for text alignment
-    if (e.altKey) {
-      switch (e.key.toLowerCase()) {
-        case "arrowleft":
-          // Alt + Left: Left align
-          visibleLayers.forEach((layer) => {
-            layer.style.textAlign = "left";
-            // If in sequential mode, update the text container alignment
-            if (layer.classList.contains("sequential")) {
-              const textContainer = layer.querySelector("div");
-              if (textContainer) {
-                textContainer.style.textAlign = "left";
-              }
-            }
-          });
-          // Update alignment dots
-          document.querySelectorAll(".alignment-dot").forEach((dot) => {
-            dot.classList.toggle("selected", dot.dataset.align === "left");
-          });
-          break;
-        case "arrowdown":
-          // Alt + Down: Center align
-          visibleLayers.forEach((layer) => {
-            layer.style.textAlign = "center";
-            // If in sequential mode, update the text container alignment
-            if (layer.classList.contains("sequential")) {
-              const textContainer = layer.querySelector("div");
-              if (textContainer) {
-                textContainer.style.textAlign = "center";
-              }
-            }
-          });
-          // Update alignment dots
-          document.querySelectorAll(".alignment-dot").forEach((dot) => {
-            dot.classList.toggle("selected", dot.dataset.align === "center");
-          });
-          break;
-        case "arrowright":
-          // Alt + Right: Right align
-          visibleLayers.forEach((layer) => {
-            layer.style.textAlign = "right";
-            // If in sequential mode, update the text container alignment
-            if (layer.classList.contains("sequential")) {
-              const textContainer = layer.querySelector("div");
-              if (textContainer) {
-                textContainer.style.textAlign = "right";
-              }
-            }
-          });
-          // Update alignment dots
-          document.querySelectorAll(".alignment-dot").forEach((dot) => {
-            dot.classList.toggle("selected", dot.dataset.align === "right");
-          });
-          break;
+    // Handle K and L keys for slant control
+    if (e.key.toLowerCase() === "k" || e.key.toLowerCase() === "l") {
+      // Get current slant value from the first visible layer
+      const firstLayer = visibleLayers[0];
+      let currentSlant = 0;
+
+      // Try to get the current slant value
+      const currentSettings = firstLayer.style.fontVariationSettings;
+      console.log("Raw font variation settings:", currentSettings);
+
+      if (currentSettings) {
+        const match = currentSettings.match(/"slnt" (\d+)/);
+        console.log("Match result:", match);
+        if (match) {
+          currentSlant = parseFloat(match[1]);
+        }
       }
+
+      console.log("Current slant before change:", currentSlant);
+
+      let newSlant;
+      const currentIncrement = e.shiftKey ? shiftIncrement : increment;
+
+      if (e.key.toLowerCase() === "k") {
+        // K: Decrease slant
+        newSlant = Math.max(currentSlant - currentIncrement, 0);
+      } else {
+        // L: Increase slant
+        newSlant = Math.min(currentSlant + currentIncrement, 200);
+      }
+
+      console.log("New slant to be applied:", newSlant);
+
+      // Update all visible layers
+      visibleLayers.forEach((layer) => {
+        // Set only the slant value
+        const newSettings = `"slnt" ${newSlant}`;
+        console.log("Setting new font variation settings:", newSettings);
+        layer.style.fontVariationSettings = newSettings;
+
+        // Verify the change
+        console.log(
+          "Updated font variation settings:",
+          layer.style.fontVariationSettings
+        );
+      });
+
+      e.preventDefault(); // Prevent default browser behavior
       return; // Prevent other key handlers from running
     }
 
@@ -1625,6 +1622,24 @@ document.addEventListener("DOMContentLoaded", () => {
               currentX - increment
             }%, ${currentY}%)`;
           });
+        } else if (e.metaKey || e.ctrlKey) {
+          // Cmd/Ctrl + Left: Decrease text size
+          const currentSize =
+            parseInt(visibleLayers[0].style.fontSize) || originalSize;
+          const newSize = Math.max(currentSize - 10, 20); // Minimum size of 20px
+          originalSize = newSize;
+          visibleLayers.forEach((layer) => {
+            layer.style.fontSize = `${newSize}px`;
+          });
+          // Update size input if it exists
+          const textSizeInput = document.getElementById("textSizeInput");
+          if (textSizeInput) {
+            textSizeInput.value = newSize;
+            const textSizeValue = document.getElementById("textSizeValue");
+            if (textSizeValue) {
+              textSizeValue.textContent = `${newSize} px`;
+            }
+          }
         } else {
           // Left: Decrease letter spacing
           visibleLayers.forEach((layer) => {
@@ -1653,6 +1668,24 @@ document.addEventListener("DOMContentLoaded", () => {
               currentX + increment
             }%, ${currentY}%)`;
           });
+        } else if (e.metaKey || e.ctrlKey) {
+          // Cmd/Ctrl + Right: Increase text size
+          const currentSize =
+            parseInt(visibleLayers[0].style.fontSize) || originalSize;
+          const newSize = Math.min(currentSize + 10, 500); // Maximum size of 500px
+          originalSize = newSize;
+          visibleLayers.forEach((layer) => {
+            layer.style.fontSize = `${newSize}px`;
+          });
+          // Update size input if it exists
+          const textSizeInput = document.getElementById("textSizeInput");
+          if (textSizeInput) {
+            textSizeInput.value = newSize;
+            const textSizeValue = document.getElementById("textSizeValue");
+            if (textSizeValue) {
+              textSizeValue.textContent = `${newSize} px`;
+            }
+          }
         } else {
           // Right: Increase letter spacing
           visibleLayers.forEach((layer) => {
@@ -1681,6 +1714,24 @@ document.addEventListener("DOMContentLoaded", () => {
               currentY - increment
             }%)`;
           });
+        } else if (e.metaKey || e.ctrlKey) {
+          // Cmd/Ctrl + Up: Increase text size
+          const currentSize =
+            parseInt(visibleLayers[0].style.fontSize) || originalSize;
+          const newSize = Math.min(currentSize + 10, 500); // Maximum size of 500px
+          originalSize = newSize;
+          visibleLayers.forEach((layer) => {
+            layer.style.fontSize = `${newSize}px`;
+          });
+          // Update size input if it exists
+          const textSizeInput = document.getElementById("textSizeInput");
+          if (textSizeInput) {
+            textSizeInput.value = newSize;
+            const textSizeValue = document.getElementById("textSizeValue");
+            if (textSizeValue) {
+              textSizeValue.textContent = `${newSize} px`;
+            }
+          }
         } else {
           // Up: Decrease line height while maintaining container height
           visibleLayers.forEach((layer) => {
@@ -1763,6 +1814,24 @@ document.addEventListener("DOMContentLoaded", () => {
               currentY + increment
             }%)`;
           });
+        } else if (e.metaKey || e.ctrlKey) {
+          // Cmd/Ctrl + Down: Decrease text size
+          const currentSize =
+            parseInt(visibleLayers[0].style.fontSize) || originalSize;
+          const newSize = Math.max(currentSize - 10, 20); // Minimum size of 20px
+          originalSize = newSize;
+          visibleLayers.forEach((layer) => {
+            layer.style.fontSize = `${newSize}px`;
+          });
+          // Update size input if it exists
+          const textSizeInput = document.getElementById("textSizeInput");
+          if (textSizeInput) {
+            textSizeInput.value = newSize;
+            const textSizeValue = document.getElementById("textSizeValue");
+            if (textSizeValue) {
+              textSizeValue.textContent = `${newSize} px`;
+            }
+          }
         } else {
           // Down: Increase line height while maintaining container height
           visibleLayers.forEach((layer) => {
@@ -2057,6 +2126,30 @@ document.addEventListener("DOMContentLoaded", () => {
       case "i":
         toggleImageMode();
         break;
+      case "e":
+        // Download high-res PNG using dom-to-image
+        const textContainer = document.querySelector(".text-container");
+        const scale = 4; // Scale factor for higher resolution
+
+        domtoimage
+          .toPng(textContainer, {
+            width: textContainer.offsetWidth * scale,
+            height: textContainer.offsetHeight * scale,
+            style: {
+              transform: `scale(${scale})`,
+              transformOrigin: "top left",
+            },
+          })
+          .then(function (dataUrl) {
+            const link = document.createElement("a");
+            link.download = "variable-font-animation.png";
+            link.href = dataUrl;
+            link.click();
+          })
+          .catch(function (error) {
+            console.error("Error generating PNG:", error);
+          });
+        break;
       case "1":
       case "2":
       case "3":
@@ -2257,10 +2350,8 @@ document.addEventListener("DOMContentLoaded", () => {
         const currentTime = (Date.now() - startTime) / 1000;
 
         // Get the correct animation durations from CSS variables
-        const weightDuration =
-          parseFloat(layer.style.getPropertyValue("--weight-duration")) || 3;
-        const widthDuration =
-          parseFloat(layer.style.getPropertyValue("--width-duration")) || 3;
+        const weightDuration = parseFloat(layer.style.getPropertyValue("--weight-duration")) || 3;
+        const widthDuration = parseFloat(layer.style.getPropertyValue("--width-duration")) || 3;
         const layerDelay = parseFloat(layer.style.animationDelay) || 0;
 
         // Get the computed style of the layer
