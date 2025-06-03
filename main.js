@@ -107,6 +107,20 @@ document.addEventListener("DOMContentLoaded", () => {
     // Set initial font variation settings
     layer.style.fontVariationSettings = "'slnt' 0";
 
+    // Set initial line height and letter spacing
+    layer.style.lineHeight = "0.8"; // Reduced from 0.85
+    layer.style.letterSpacing = "-0.3px"; // Reduced from -0.2px
+
+    // Add padding to prevent text cutoff
+    layer.style.padding = "40px 0"; // Add vertical padding
+    layer.style.minHeight = "100%"; // Ensure container is tall enough
+    layer.style.display = "flex";
+    layer.style.alignItems = "center";
+    layer.style.justifyContent = "center";
+
+    // Set initial position
+    layer.style.transform = "translate(-50%, -48%)"; // Adjusted from -50% to -48%
+
     // Set animation durations
     layer.style.setProperty(
       "--weight-duration",
@@ -1550,6 +1564,9 @@ document.addEventListener("DOMContentLoaded", () => {
     // Smaller increment for more subtle changes
     const increment = 2;
     const shiftIncrement = 10;
+    const spacingIncrement = 0.3; // Adjusted from 0.2 to 0.3
+    const lineHeightIncrement = 0.015; // Adjusted from 0.01 to 0.015
+    const positionIncrement = 0.3; // Adjusted from 0.2 to 0.3
 
     // Handle K and L keys for slant control
     if (e.key.toLowerCase() === "k" || e.key.toLowerCase() === "l") {
@@ -1619,7 +1636,7 @@ document.addEventListener("DOMContentLoaded", () => {
               ? parseFloat(transformMatch[2])
               : -45;
             layer.style.transform = `translate(${
-              currentX - increment
+              currentX - positionIncrement
             }%, ${currentY}%)`;
           });
         } else if (e.metaKey || e.ctrlKey) {
@@ -1645,7 +1662,9 @@ document.addEventListener("DOMContentLoaded", () => {
           visibleLayers.forEach((layer) => {
             const currentLetterSpacing =
               parseFloat(layer.style.letterSpacing) || 0;
-            layer.style.letterSpacing = `${currentLetterSpacing - increment}px`;
+            layer.style.letterSpacing = `${
+              currentLetterSpacing - spacingIncrement
+            }px`;
           });
         }
         break;
@@ -1665,7 +1684,7 @@ document.addEventListener("DOMContentLoaded", () => {
               ? parseFloat(transformMatch[2])
               : -45;
             layer.style.transform = `translate(${
-              currentX + increment
+              currentX + positionIncrement
             }%, ${currentY}%)`;
           });
         } else if (e.metaKey || e.ctrlKey) {
@@ -1691,7 +1710,9 @@ document.addEventListener("DOMContentLoaded", () => {
           visibleLayers.forEach((layer) => {
             const currentLetterSpacing =
               parseFloat(layer.style.letterSpacing) || 0;
-            layer.style.letterSpacing = `${currentLetterSpacing + increment}px`;
+            layer.style.letterSpacing = `${
+              currentLetterSpacing + spacingIncrement
+            }px`;
           });
         }
         break;
@@ -1711,7 +1732,7 @@ document.addEventListener("DOMContentLoaded", () => {
               ? parseFloat(transformMatch[2])
               : -45;
             layer.style.transform = `translate(${currentX}%, ${
-              currentY - increment
+              currentY - positionIncrement
             }%)`;
           });
         } else if (e.metaKey || e.ctrlKey) {
@@ -1750,7 +1771,7 @@ document.addEventListener("DOMContentLoaded", () => {
               : -45;
 
             // Calculate new line height with smaller increment
-            const newLineHeight = currentLineHeight - increment / 50;
+            const newLineHeight = currentLineHeight - lineHeightIncrement;
             layer.style.lineHeight = `${newLineHeight}`;
 
             // Calculate padding adjustment based on line height change
@@ -1811,7 +1832,7 @@ document.addEventListener("DOMContentLoaded", () => {
               ? parseFloat(transformMatch[2])
               : -45;
             layer.style.transform = `translate(${currentX}%, ${
-              currentY + increment
+              currentY + positionIncrement
             }%)`;
           });
         } else if (e.metaKey || e.ctrlKey) {
@@ -1850,7 +1871,7 @@ document.addEventListener("DOMContentLoaded", () => {
               : -45;
 
             // Calculate new line height with smaller increment
-            const newLineHeight = currentLineHeight + increment / 50;
+            const newLineHeight = currentLineHeight + lineHeightIncrement;
             layer.style.lineHeight = `${newLineHeight}`;
 
             // Calculate padding adjustment based on line height change
@@ -2127,28 +2148,114 @@ document.addEventListener("DOMContentLoaded", () => {
         toggleImageMode();
         break;
       case "e":
-        // Download high-res PNG using dom-to-image
+        // Create PDF with editable font layers
         const textContainer = document.querySelector(".text-container");
         const scale = 4; // Scale factor for higher resolution
 
-        domtoimage
-          .toPng(textContainer, {
-            width: textContainer.offsetWidth * scale,
-            height: textContainer.offsetHeight * scale,
-            style: {
-              transform: `scale(${scale})`,
-              transformOrigin: "top left",
-            },
-          })
-          .then(function (dataUrl) {
-            const link = document.createElement("a");
-            link.download = "variable-font-animation.png";
-            link.href = dataUrl;
-            link.click();
-          })
-          .catch(function (error) {
-            console.error("Error generating PNG:", error);
+        // Ensure all layers are visible for export
+        const allLayers = document.querySelectorAll(".text-layer");
+        const originalOpacities = Array.from(allLayers).map(
+          (layer) => layer.style.opacity
+        );
+        allLayers.forEach((layer) => (layer.style.opacity = "1"));
+
+        // Add a longer delay to ensure everything is ready
+        setTimeout(() => {
+          // Create a new PDF document using the window.jsPDF constructor
+          const pdf = new window.jspdf.jsPDF({
+            orientation: "portrait",
+            unit: "px",
+            format: [textContainer.offsetWidth, textContainer.offsetHeight],
           });
+
+          // Determine which font file to use based on the current font family
+          const isRounded =
+            allLayers[0].style.fontFamily.includes("OffgridRounded");
+          const fontFile = isRounded
+            ? "250526_Offgrid_Variable_ROUNDEDVF.ttf"
+            : "250526_Offgrid_Variable_WIDTH_AXIS_FOR_WEBVF.ttf";
+          const fontName = isRounded ? "OffgridRounded" : "Offgrid";
+
+          // Load the font file
+          fetch(fontFile)
+            .then((response) => response.arrayBuffer())
+            .then((fontArrayBuffer) => {
+              // Add the font to the PDF
+              pdf.addFileToVFS(fontFile, fontArrayBuffer);
+              pdf.addFont(fontFile, fontName, "normal");
+              pdf.setFont(fontName);
+
+              // Set background color
+              const bgColor = getComputedStyle(document.body).backgroundColor;
+              pdf.setFillColor(bgColor);
+              pdf.rect(
+                0,
+                0,
+                textContainer.offsetWidth,
+                textContainer.offsetHeight,
+                "F"
+              );
+
+              // Process each layer
+              allLayers.forEach((layer, index) => {
+                if (layer.style.opacity !== "0") {
+                  // Get font settings
+                  const fontSize = parseInt(layer.style.fontSize);
+                  const color = layer.style.color;
+                  const fontWeight = layer.style.fontWeight;
+                  const fontStretch = layer.style.fontStretch;
+                  const lineHeight = parseFloat(layer.style.lineHeight);
+                  const letterSpacing = parseFloat(layer.style.letterSpacing);
+
+                  // Get text content
+                  const text = layer.textContent;
+
+                  // Calculate position
+                  const rect = layer.getBoundingClientRect();
+                  const containerRect = textContainer.getBoundingClientRect();
+                  const x = rect.left - containerRect.left;
+                  const y = rect.top - containerRect.top;
+
+                  // Set font properties
+                  pdf.setFontSize(fontSize);
+                  pdf.setTextColor(color);
+
+                  // Add text with variable font settings
+                  const lines = text.split("\n");
+                  let currentY = y;
+
+                  lines.forEach((line, lineIndex) => {
+                    // Add text with custom font settings
+                    pdf.text(line, x, currentY, {
+                      fontSize: fontSize,
+                      fontStyle: fontWeight,
+                      fontStretch: fontStretch,
+                      lineHeight: lineHeight,
+                      letterSpacing: letterSpacing,
+                    });
+
+                    // Move to next line
+                    currentY += fontSize * lineHeight;
+                  });
+                }
+              });
+
+              // Save the PDF
+              pdf.save("variable-font-animation.pdf");
+
+              // Restore original opacities
+              allLayers.forEach((layer, index) => {
+                layer.style.opacity = originalOpacities[index];
+              });
+            })
+            .catch((error) => {
+              console.error("Error loading font:", error);
+              // Restore original opacities even if there's an error
+              allLayers.forEach((layer, index) => {
+                layer.style.opacity = originalOpacities[index];
+              });
+            });
+        }, 500);
         break;
       case "1":
       case "2":
