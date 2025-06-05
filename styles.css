@@ -15,9 +15,10 @@
 
 @font-face {
     font-family: 'OffgridRounded';
-    src: url('250526_Offgrid_Variable_ROUNDEDVF.ttf') format('truetype-variations');
+    src: url('250605Offgrid-variableROUNDEDVF.ttf') format('truetype-variations');
     font-weight: 99 200;
     font-stretch: 99% 200%;
+    font-variation-settings: 'slnt' 0;
 }
 
 body {

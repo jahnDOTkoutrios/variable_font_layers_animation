@@ -1603,6 +1603,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
       // Update all visible layers
       visibleLayers.forEach((layer) => {
+        // Check if the layer is using the rounded font
+        const isRounded = layer.style.fontFamily.includes("OffgridRounded");
+
         // Set only the slant value
         const newSettings = `"slnt" ${newSlant}`;
         console.log("Setting new font variation settings:", newSettings);
@@ -2148,114 +2151,7 @@ document.addEventListener("DOMContentLoaded", () => {
         toggleImageMode();
         break;
       case "e":
-        // Create PDF with editable font layers
-        const textContainer = document.querySelector(".text-container");
-        const scale = 4; // Scale factor for higher resolution
-
-        // Ensure all layers are visible for export
-        const allLayers = document.querySelectorAll(".text-layer");
-        const originalOpacities = Array.from(allLayers).map(
-          (layer) => layer.style.opacity
-        );
-        allLayers.forEach((layer) => (layer.style.opacity = "1"));
-
-        // Add a longer delay to ensure everything is ready
-        setTimeout(() => {
-          // Create a new PDF document using the window.jsPDF constructor
-          const pdf = new window.jspdf.jsPDF({
-            orientation: "portrait",
-            unit: "px",
-            format: [textContainer.offsetWidth, textContainer.offsetHeight],
-          });
-
-          // Determine which font file to use based on the current font family
-          const isRounded =
-            allLayers[0].style.fontFamily.includes("OffgridRounded");
-          const fontFile = isRounded
-            ? "250526_Offgrid_Variable_ROUNDEDVF.ttf"
-            : "250526_Offgrid_Variable_WIDTH_AXIS_FOR_WEBVF.ttf";
-          const fontName = isRounded ? "OffgridRounded" : "Offgrid";
-
-          // Load the font file
-          fetch(fontFile)
-            .then((response) => response.arrayBuffer())
-            .then((fontArrayBuffer) => {
-              // Add the font to the PDF
-              pdf.addFileToVFS(fontFile, fontArrayBuffer);
-              pdf.addFont(fontFile, fontName, "normal");
-              pdf.setFont(fontName);
-
-              // Set background color
-              const bgColor = getComputedStyle(document.body).backgroundColor;
-              pdf.setFillColor(bgColor);
-              pdf.rect(
-                0,
-                0,
-                textContainer.offsetWidth,
-                textContainer.offsetHeight,
-                "F"
-              );
-
-              // Process each layer
-              allLayers.forEach((layer, index) => {
-                if (layer.style.opacity !== "0") {
-                  // Get font settings
-                  const fontSize = parseInt(layer.style.fontSize);
-                  const color = layer.style.color;
-                  const fontWeight = layer.style.fontWeight;
-                  const fontStretch = layer.style.fontStretch;
-                  const lineHeight = parseFloat(layer.style.lineHeight);
-                  const letterSpacing = parseFloat(layer.style.letterSpacing);
-
-                  // Get text content
-                  const text = layer.textContent;
-
-                  // Calculate position
-                  const rect = layer.getBoundingClientRect();
-                  const containerRect = textContainer.getBoundingClientRect();
-                  const x = rect.left - containerRect.left;
-                  const y = rect.top - containerRect.top;
-
-                  // Set font properties
-                  pdf.setFontSize(fontSize);
-                  pdf.setTextColor(color);
-
-                  // Add text with variable font settings
-                  const lines = text.split("\n");
-                  let currentY = y;
-
-                  lines.forEach((line, lineIndex) => {
-                    // Add text with custom font settings
-                    pdf.text(line, x, currentY, {
-                      fontSize: fontSize,
-                      fontStyle: fontWeight,
-                      fontStretch: fontStretch,
-                      lineHeight: lineHeight,
-                      letterSpacing: letterSpacing,
-                    });
-
-                    // Move to next line
-                    currentY += fontSize * lineHeight;
-                  });
-                }
-              });
-
-              // Save the PDF
-              pdf.save("variable-font-animation.pdf");
-
-              // Restore original opacities
-              allLayers.forEach((layer, index) => {
-                layer.style.opacity = originalOpacities[index];
-              });
-            })
-            .catch((error) => {
-              console.error("Error loading font:", error);
-              // Restore original opacities even if there's an error
-              allLayers.forEach((layer, index) => {
-                layer.style.opacity = originalOpacities[index];
-              });
-            });
-        }, 500);
+        // PDF export functionality removed
         break;
       case "1":
       case "2":
